@@ -1,8 +1,11 @@
 package com.rakrak;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 
+import static com.rakrak.GameState.GamePhase.*;
 import static com.rakrak.Rules.RegionName.*;
+import static com.rakrak.PlayerIndex.*;
 
 /**
  * Created by Wilder on 9/6/2017.
@@ -10,9 +13,6 @@ import static com.rakrak.Rules.RegionName.*;
  *      Game object, to capture actual state of game.
  *      Agents, to reason about the game.
  */
-
-
-
 public class GameState {
 
     enum GamePhase { OLDWORLD, DRAW, SUMMON, BATTLE, CORRUPTION, END };
@@ -20,10 +20,10 @@ public class GameState {
     private Rules rules;
     private Region[] regions;
     private Player[] players;
-	private PlayerIndex activePlayer;
+	private int activePlayer;
 
     private GamePhase gamePhase;
-
+    private double probability;
 
     GameState(Rules rules) {
         this.rules = rules;
@@ -49,24 +49,29 @@ public class GameState {
 		return true;
 	}
 	
-	public ArrayList<Action> getLegalActions(Player player) {
+	public ArrayList<Action> getLegalActions(int player) {
+	    ArrayList<Action> actions = new ArrayList<Action>();
 		// FIXME TODO
-		for (Region r in regions) {
+		for (Region r: regions) {
+		    // FIXME TODO
 			// can play a card
 			
 			// or play a piece
 			
 		}
+		return actions;
 	}
 	
 	// generateSuccessors
 	// apply an action, then generate all possible successor gamestates
 	// 	until the next player action;
-	public ArrayList<GameState> generateSuccessors(Player player, Action action) {
+	public ArrayList<GameState> generateSuccessors(int player, Action action) {
+	    ArrayList<GameState> successors = new ArrayList<GameState>();
 		// FIXME TODO
+        return successors;
 	}
 	
-	public Action getBestMove(Player player) {
+	public Action getBestMove(int player) {
 		// FIXME TODO player is mutable... risk of corrupting state while searching
 		// need to fix this while maintaining equivalence
 		
@@ -76,10 +81,10 @@ public class GameState {
 		Action bestAction = null;
 		double bestProb = 0;
 		
-		for (Action a in actions) {
+		for (Action a: actions) {
 			ArrayList<GameState> nextStates = generateSuccessors(player, a);
-			for( GameState nextState in nextStates) {
-				double thisProb = nextState.getProbability() * nextState.winProbability(player.getID);
+			for(GameState nextState: nextStates) {
+				double thisProb = nextState.getProbability() * nextState.winProbability(player);
 				if(thisProb > bestProb) {
 					bestProb = thisProb;
 					bestAction = a;
@@ -90,10 +95,10 @@ public class GameState {
 		return bestAction;
 	}
 	
-	public double winProbability(PlayerIndex playerID) {
-		if (gameOver() && winner == playerID) {
+	public double winProbability(int playerID) {
+		if (gameOver() && winner() == playerID) {
 			return 1;
-		} else if(isWin && winner != playerID) {
+		} else if(gameOver() && winner() != playerID) {
 			return 0;
 		} else {
 			// find likely next player's state
@@ -101,28 +106,33 @@ public class GameState {
 			ArrayList<GameState> nextGameStates = generateSuccessors(activePlayer, a);
 			
 			double probability = 0;
-			for( GameState nextGameState in nextGameStates ) {
+			for( GameState nextGameState: nextGameStates ) {
 				probability += nextGameState.getProbability() * nextGameState.winProbability(playerID);
 			}
 			return probability;
 		}
 	}
 	
-	public Player whoseTurn() {
+	public int whoseTurn() {
 		return activePlayer;
 	}
 	
 	public boolean gameOver() {
 		// FIXME TODO
+        return false;
 	}
-	public PlayerIndex winner() {
+
+	public int winner() {
 		// FIXME TODO
+        return 0;
 	}
-	public getProbability() {
+
+	public double getProbability() {
 		return probability;
 	}
-	public setProbability(double probability) {
-		this.probability = probability;
+
+	public void setProbability(double probability) {
+	    this.probability = probability;
 	}
 
     // Should store:

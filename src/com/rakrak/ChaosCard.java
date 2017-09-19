@@ -12,13 +12,12 @@ public class ChaosCard {
 	
 	public int getCost(Region region) {
 		// check for cost modifiers in region
-		
 		return cost;
 	}
 	
 	public boolean play(Player player, Region region) {
 		int cost = getCost(region);
-		player.power -= cost;
+		player.pp -= cost;
 		region.playCard(this);
 		this.region = region;
 		inPlay = true;
@@ -29,6 +28,6 @@ public class ChaosCard {
 	public boolean discard() {
 		region.discard(this);
 		inPlay = false;
-		
+        return true;
 	}
 }

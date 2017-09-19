@@ -1,21 +1,19 @@
 package com.rakrak;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 
 import static com.rakrak.Rules.RegionName.*;
+import static com.rakrak.PlayerIndex.*;
 
 /**
  * Created by Wilder on 9/6/2017.
  */
 public class Rules {
 
-    public class RegionName {
+    public static class RegionName {
         static final int NORSCA = 0, TROLLCOUNTRY = 1, KISLEV = 2, EMPIRE = 3, BRETONNIA = 4, ESTALIA = 5, TILEA = 6, BORDERPRINCES = 7, BADLANDS = 8;
         static final int NUM_REGIONS = 9;
-    }
-    public class PlayerIndex {
-        static final int KHORNE = 0, NURGLE = 1, TZEENTCH = 2, SLAANESH = 3;
-        static final int NUM_PLAYERS = 4;
     }
 
     Region[] defineBoard() {
@@ -34,4 +32,35 @@ public class Rules {
 
         return regions;
     }
+
+    ArrayList<ChaosCard> generateDeck(int player) {
+        ArrayList<ChaosCard> deck = new ArrayList<ChaosCard>();
+        // FIXME TODO;
+        return deck;
+    }
+
+    public int startingPP(int index) {
+        // FIXME TODO
+        return 0;
+    }
+
+    ArrayList<Plastic> generateReserve(int index) {
+        ArrayList<Plastic> list = new ArrayList<Plastic>();
+        // FIXME TODO
+        return list;
+    }
+
+    ArrayList<Tick> generateDial(int index) {
+        ArrayList<Tick> dial = new ArrayList<Tick>();
+        // FIXME TODO (populate from xml)
+        return dial;
+    }
+
+    ArrayList<Upgrade> generateUpgrades(int index) {
+        ArrayList<Upgrade> upgrades = new ArrayList<Upgrade>();
+        // FIXME TODO (populate from xml?)
+        return upgrades;
+    }
+
+
 }

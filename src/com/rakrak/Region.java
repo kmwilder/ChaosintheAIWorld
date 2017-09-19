@@ -1,7 +1,7 @@
 package com.rakrak;
 
 import java.util.ArrayList;
-import static com.rakrak.Rules.PlayerIndex.*;
+import static com.rakrak.PlayerIndex.*;
 
 /**
  * Created by Wilder on 9/6/2017.
@@ -47,5 +47,14 @@ public class Region {
         heroes = 0;
         skaven = 0;
         events = 0;
+    }
+
+    public void playCard(ChaosCard card) {
+        // FIXME TODO
+    }
+
+    public void discard(ChaosCard card) {
+        // FIXME TODO
+        // is this even needed? Or simply discard everything in a region at once, calling each card's discard?
     }
 }

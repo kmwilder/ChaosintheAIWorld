@@ -2,11 +2,11 @@ package com.rakrak;
 
 
 import java.util.ArrayList;
-import static com.rakrak.Rules.PlayerIndex.*;
+import static com.rakrak.PlayerIndex.*;
 
 public class Action {
 	// Simple container class?
-	public PlayerIndex player;
+	public int player;
 	enum ActionType {
 		MOVE_PLASTIC,
 		MOVE_TOKEN,
@@ -23,4 +23,9 @@ public class Action {
 	public Region dstRegion = null;
 	
 	public Action chainedAction = null;
+
+	public void printInfo() {
+		// FIXME TODO
+		System.out.println("Action info: TODO");
+	}
 }

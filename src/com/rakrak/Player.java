@@ -1,10 +1,13 @@
 package com.rakrak;
 
+import java.util.ArrayList;
+import static com.rakrak.PlayerIndex.*;
+
 /**
  * Created by Wilder on 9/6/2017.
  */
 public class Player {
-	public PlayerIndex index;
+	public int index;
 	public String name;
 	public int pp;
 	public int vp;
@@ -18,27 +21,27 @@ public class Player {
 	public int dial_position;
 	public int dacs;
 	
-	public ArrayList<Upgrades> upgrades_possible;
-	public ArrayList<Upgrades> upgrades_taken;
+	public ArrayList<Upgrade> upgrades_possible;
+	public ArrayList<Upgrade> upgrades_taken;
 	
 	private Rules rules;
 	
-	Player(Rules rules, PlayerIndex index) {
-		name = rules.getPlayerName(idx);
-		deck = rules.generateDeck(idx);
-		knownHand = new ArrayList<ChaosCard> ();
+	Player(Rules rules, int index) {
+		name = PlayerIndex.getPlayerName(index);
+		deck = rules.generateDeck(index);
+		hand = new ArrayList<ChaosCard> ();
 		handSize = 0;
 		handKnown = false;
-		pp = rules.startingPP(idx);
+		pp = rules.startingPP(index);
 		vp = 0;
-		reserve = rules.generateReserve(idx);
+		reserve = rules.generateReserve(index);
 		
-		dial = rules.generateDial(idx);
+		dial = rules.generateDial(index);
 		dial_position = 0;
 		dacs = 0;
 		
-		upgrades_possible = rules.generateUpgrades(idx);
-		upgrades_taken = new ArrayList<Upgrades>();
+		upgrades_possible = rules.generateUpgrades(index);
+		upgrades_taken = new ArrayList<Upgrade>();
 		
 		this.rules = rules;
 		this.index = index;
