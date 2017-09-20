@@ -7,55 +7,51 @@ import java.util.ArrayList;
  */
 public class Tick {
     // Represents one tick on the dial
-    private int threat;
-    private int vp;
-    private boolean upgrade;
-    private int tokens;
-    private int drawCards;
+    public enum DialType { VICTORY, VP, UPGRADE, DRAW_CARDS, TOKEN };
     public enum TokenAction { PLACE, MOVE, REMOVE };
     public enum TokenType { WARPSTONE, CORRUPTION, NOBLES, OLDWORLD };
-    TokenAction tokenAction;
-    TokenType tokenType;
-    private boolean victory;
+
+    // Context-insensitive
+    private int threat;
+    DialType dialType;
+
+    // Context-sensitive
+    private int num;
+    private TokenAction tokenAction;
+    private TokenType tokenType;
 
     Tick() {
         // default constructor... try not to use it?
-        threat = 0;
-        vp = 0;
-        upgrade = false;
-        tokens = 0;
-        victory = false;
-        drawCards = 0;
     }
 
-    Tick(int threat) {
-        // default constructor... try not to use it?
+    // Used for VICTORY, UPGRADE types
+    Tick(int threat, DialType type) {
         this.threat = threat;
-        vp = 0;
-        upgrade = false;
-        tokens = 0;
-        victory = false;
-        drawCards = 0;
+        this.dialType = type;
     }
 
-    public void setVictory() {
-        victory = true;
+    // Used for VP, DRAW_CARDS
+    Tick(int threat, DialType type, int num) {
+        this.threat = threat;
+        this.dialType = type;
+        this.num = num;
     }
-    public void setVp(int vp) {
-        this.vp = vp;
-    }
-    public void setUpgrade() {
-        this.upgrade = true;
-    }
-    public void setDrawCards(int cards) {
-        this.drawCards = cards;
-    }
-    public void setTokenAction(TokenAction tokenAction, int tokens, TokenType tokenType) {
+
+    // Used for TOKEN
+    Tick(int threat, DialType dialType, TokenAction tokenAction, int num, TokenType tokenType) {
+        this.threat = threat;
+        this.dialType = dialType;
         this.tokenAction = tokenAction;
-        this.tokens = tokens;
+        this.num = num;
         this.tokenType = tokenType;
     }
 
-    // FIXME TODO getters?
+    public int getThreat() {
+        return threat;
+    }
+
+    public DialType getDialType() {
+        return dialType;
+    }
 
 }

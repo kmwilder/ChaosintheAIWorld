@@ -1,7 +1,6 @@
 package com.rakrak;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.*;
 
 import static com.rakrak.Rules.RegionName.*;
 import static com.rakrak.PlayerIndex.*;
@@ -12,7 +11,7 @@ import static com.rakrak.PlayerIndex.*;
 public class Rules {
 
     public static class RegionName {
-        static final int NORSCA = 0, TROLLCOUNTRY = 1, KISLEV = 2, EMPIRE = 3, BRETONNIA = 4, ESTALIA = 5, TILEA = 6, BORDERPRINCES = 7, BADLANDS = 8;
+        static final int NORSCA = 0, TROLLCOUNTRY = 1, KISLEV = 2, EMPIRE = 3, BRETONNIA = 4, ESTALIA = 5, TILEA = 6, BORDERPRINCES = 7, BADLANDS = 8, RESERVE = -1;
         static final int NUM_REGIONS = 9;
     }
 
@@ -33,8 +32,8 @@ public class Rules {
         return regions;
     }
 
-    ArrayList<ChaosCard> generateDeck(int player) {
-        ArrayList<ChaosCard> deck = new ArrayList<ChaosCard>();
+    public Set<ChaosCard> generateDeck(int player) {
+        Set<ChaosCard> deck = new HashSet<ChaosCard>();
         // FIXME TODO;
         return deck;
     }
@@ -44,23 +43,22 @@ public class Rules {
         return 0;
     }
 
-    ArrayList<Plastic> generateReserve(int index) {
-        ArrayList<Plastic> list = new ArrayList<Plastic>();
+    public Set<Plastic> generateReserve(int index) {
+        Set<Plastic> list = new HashSet<Plastic>();
         // FIXME TODO
         return list;
     }
 
-    ArrayList<Tick> generateDial(int index) {
-        ArrayList<Tick> dial = new ArrayList<Tick>();
+    public List<Tick> generateDial(int index) {
+        List<Tick> dial = new ArrayList<Tick>();
         // FIXME TODO (populate from xml)
         return dial;
     }
 
-    ArrayList<Upgrade> generateUpgrades(int index) {
-        ArrayList<Upgrade> upgrades = new ArrayList<Upgrade>();
+    public Set<Upgrade> generateUpgrades(int index) {
+        Set<Upgrade> upgrades = new HashSet<Upgrade>();
         // FIXME TODO (populate from xml?)
         return upgrades;
     }
-
 
 }

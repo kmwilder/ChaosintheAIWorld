@@ -14,4 +14,12 @@ public class Plastic {
     public static int cost; // can't be static across plastic
     public static int dice;
     public static int defense;
+
+    public int getCost() {
+        return cost;
+    }
+
+    public int getDefense() {
+        return defense;
+    }
 }

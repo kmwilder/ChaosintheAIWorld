@@ -14,6 +14,10 @@ public class ChaosCard {
 		// check for cost modifiers in region
 		return cost;
 	}
+	public int getPower(Region region) {
+		// check for cost modifiers in region
+		return cost;
+	}
 	
 	public boolean play(Player player, Region region) {
 		int cost = getCost(region);

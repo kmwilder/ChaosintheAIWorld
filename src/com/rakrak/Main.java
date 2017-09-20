@@ -11,7 +11,7 @@ public class Main {
 		
 		int whoseTurn = gameState.whoseTurn();
 		
-		Action action = gameState.getBestMove(whoseTurn);
+		Action action = gameState.getBestMove(whoseTurn, true);
 		
 		if(action != null) {
 			action.printInfo();
