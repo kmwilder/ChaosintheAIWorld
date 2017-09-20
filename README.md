@@ -12,6 +12,7 @@ Thanks to the Stanford CS221 pacman minmax agent project for guidance on how to 
  
 Possible problems:
 * Can't copy gamestate if two different array/sets point to the same object?
+* Not truly minmax... maxmax? Support both every-man-for-himself, and all-conspiring-against-me.
  
  TODOs:
  * Implement Upgrade class
