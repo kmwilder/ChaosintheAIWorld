@@ -15,12 +15,12 @@ import static com.rakrak.PlayerIndex.*;
  */
 public class GameState {
 
-    enum GamePhase { OLDWORLD, DRAW, SUMMON, BATTLE, CORRUPTION, END }
+    enum GamePhase { OLDWORLD, DRAW, SUMMON, BATTLE, DOMINATE, CORRUPTION, END }
     enum EndGamePhase { HERO, OLDWORLD, DIALS }
 
     private Rules rules;
-    private Region[] regions;
-    private Player[] players;
+    public Region[] regions;
+    public Player[] players;
 	private int activePlayer;
 
 	// phases of the game
@@ -30,6 +30,11 @@ public class GameState {
 
 	// Probability of this gameState existing
     private double probability;
+
+	// Action queue for sideband actions
+	private Queue<Action> actionQueue;
+
+	GameState lastRound;
 
     GameState(Rules rules) {
         this.rules = rules;
@@ -45,7 +50,41 @@ public class GameState {
 		activePlayer = KHORNE;
 		
 		gamePhase = OLDWORLD;
+
+		probability = 1.0;
+
+		actionQueue = new LinkedList<Action>();
+		lastRound = null;
     }
+
+    GameState(GameState source) {
+    	this.rules = rules;
+		this.regions = new Region[NUM_REGIONS];
+		for(int i = 0; i < NUM_REGIONS; i++) {
+			this.regions[i] = new Region(source.regions[i]);
+		}
+		this.players = new Player[NUM_PLAYERS];
+		for(int i = 0; i < NUM_PLAYERS; i++) {
+			this.players[i] = new Player(source.players[i]);
+		}
+		this.activePlayer = source.activePlayer;
+		this.gamePhase = source.gamePhase;
+		this.endGamePhase = source.endGamePhase;
+		this.currentRegion = source.currentRegion;
+		this.probability = source.probability;
+		this.actionQueue = new LinkedList<Action>(source.actionQueue);
+		lastRound = source.lastRound;
+	}
+
+	public List<GameState> listify() {
+		List<GameState> list = new ArrayList<GameState>();
+		list.add(this);
+		return list;
+	}
+
+	public void queue(Action action) {
+		actionQueue.add(action);
+	}
 	
 	public boolean loadStateFromFile(String filename) {
 		// FIXME TODO
@@ -85,9 +124,10 @@ public class GameState {
 					// Place plastic if adjacent
 					if(playerAdjacentTo(playerIndex, dstRegionIndex)) {
 						// Place from reserve
-						for(Plastic p : player.reserve) {
+						for(int i = 0; i < player.reserve.size(); i++) {
+							Plastic p = player.reserve.get(i);
 							if(player.pp >= dstRegion.plasticCost(playerIndex, p)) {
-								actions.add(new Action(playerIndex, MOVE_PLASTIC, p, RESERVE, dstRegionIndex));
+								actions.add(new Action(playerIndex, MOVE_PLASTIC, i, RESERVE, dstRegionIndex));
 							}
 						}
 
@@ -95,9 +135,10 @@ public class GameState {
 						for(int srcRegionIndex = 0; srcRegionIndex < NUM_REGIONS; srcRegionIndex++) {
 							Region srcRegion = regions[srcRegionIndex];
 							if(srcRegionIndex != dstRegionIndex && srcRegion.canSummonOut()) {
-								for(Plastic p : srcRegion.getPlasticControlledBy(playerIndex)) {
+								for(int i = 0; i < srcRegion.plastic.size(); i++) {
+									Plastic p = srcRegion.plastic.get(i);
 									if(player.pp >= dstRegion.plasticCost(playerIndex, p)) {
-										actions.add(new Action(playerIndex, MOVE_PLASTIC, p, srcRegionIndex, dstRegionIndex));
+										actions.add(new Action(playerIndex, MOVE_PLASTIC, i, srcRegionIndex, dstRegionIndex));
 									}
 								}
 							}
@@ -105,7 +146,7 @@ public class GameState {
 					}
 
 					// Play a card to available slots
-					Set<ChaosCard> hand = player.handKnown ? player.hand : player.deck;
+					List<ChaosCard> hand = player.handKnown ? player.hand : player.deck;
 					for (ChaosCard card : hand) {
 						for (int slot = 0; slot < dstRegion.getCardSlots(); slot++) {
 							if (dstRegion.canPlayCard(playerIndex, slot) && player.getPP() >= dstRegion.cardCost(playerIndex, card)) {
@@ -191,10 +232,74 @@ public class GameState {
 	// generateSuccessors
 	// apply an action, then generate all possible successor gamestates
 	// 	until the next player action;
-	public ArrayList<GameState> generateSuccessors(int player, Action action) {
-	    ArrayList<GameState> successors = new ArrayList<GameState>();
-		// FIXME TODO
+	public List<GameState> generateSuccessors(int player, Action action) {
+	    List<GameState> successors = new ArrayList<GameState>();
+
+		GameState nextGameState;
+
+		switch(action.actionType) {
+			case MOVE_PLASTIC:
+				// FIXME TODO
+				break;
+			case MOVE_TOKEN:
+				// FIXME TODO
+				break;
+			case KILL_PLASTIC:
+
+				break;
+			case DISCARD_PLASTIC:
+				break;
+			case DISCARD_TOKEN:
+				break;
+			case PLACE_CARD:
+
+				break;
+
+			case DISCARD_CARD:
+				for (int i = 0; i < players[player].hand.size(); i++) {
+					nextGameState = new GameState(this);
+					Player p = nextGameState.players[player];
+					ChaosCard cc = p.hand.get(i);
+					p.discard.add(p.hand.remove(i));
+					p.discardedThisTurn++;
+					successors.addAll(nextGameState.resolve());
+				}
+				break;
+
+			case DRAW_CARD:
+				for(int i = 0; i < players[player].deck.size(); i++) {
+					nextGameState = new GameState(this);
+					Player p = nextGameState.players[player];
+					p.hand.add(p.deck.remove(i));
+					p.drawnThisTurn++;
+					successors.addAll(nextGameState.resolve());
+				}
+				break;
+
+			case PICK_UPGRADE:
+				for(int i = 0; i < players[player].upgrades_possible.size(); i++) {
+					nextGameState = new GameState(this);
+					Player p = nextGameState.players[player];
+					p.upgrades_taken.add(p.upgrades_possible.remove(i));
+					// FIXME amend rules here?
+					successors.addAll(nextGameState.resolve());
+				}
+				break;
+
+			case PASS:
+				nextGameState = new GameState(this);
+				nextGameState.players[player].vp = 0;
+				successors.addAll(nextGameState.resolve());
+				break;
+		}
+
         return successors;
+	}
+
+	// Now that the action is complete, move the game forward.
+	public List<GameState> resolve() {
+		// discard any must discards immediately
+
 	}
 	
 	public Action getBestMove(int player, boolean print) {
@@ -208,7 +313,7 @@ public class GameState {
 		// For each action...
 		for (Action a: actions) {
 			// Generate all successor states.
-			ArrayList<GameState> nextStates = generateSuccessors(player, a);
+			List<GameState> nextStates = generateSuccessors(player, a);
 			double totalProb = 0;
 
 			for(GameState nextState: nextStates) {
@@ -245,7 +350,7 @@ public class GameState {
 		} else {
 			// find likely next player's state
 			Action a = getBestMove(activePlayer, false);
-			ArrayList<GameState> nextGameStates = generateSuccessors(activePlayer, a);
+			List<GameState> nextGameStates = generateSuccessors(activePlayer, a);
 			
 			double probability = 0;
 			for( GameState nextGameState: nextGameStates ) {
@@ -276,11 +381,4 @@ public class GameState {
 	public void setProbability(double probability) {
 	    this.probability = probability;
 	}
-
-    // Should store:
-    // gameStateData (p much all counters, token placements, phase of game, etc)
-
-    // Will need to implement:
-    // getScore( agentIndex ) returns expected score (given successive gamestates?)
-
 }

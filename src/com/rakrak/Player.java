@@ -1,9 +1,6 @@
 package com.rakrak;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.rakrak.PlayerIndex.*;
 import static com.rakrak.Rules.RegionName.NUM_REGIONS;
@@ -22,14 +19,16 @@ public class Player {
 	public int vp;
 	public List<Tick> dial;
 	public int dial_position;
-	public Set<Upgrade> upgrades_possible;
-	public Set<Upgrade> upgrades_taken;
+	public List<Upgrade> upgrades_possible;
+	public List<Upgrade> upgrades_taken;
 
 	// Turn-wide vars
 	public int pp;
-	public Set<ChaosCard> deck;
-	public Set<ChaosCard> hand;
-	public Set<Plastic> reserve;
+	public List<ChaosCard> deck;
+	public List<ChaosCard> hand;
+	public int handSize;
+	public List<ChaosCard> discard;
+	public List<Plastic> reserve;
 	public int dacs;
 
 	// Draw phase
@@ -46,10 +45,11 @@ public class Player {
 
 	Player(Rules rules, int index) {
 		name = PlayerIndex.getPlayerName(index);
-		deck = rules.generateDeck(index);
-		hand = new HashSet<ChaosCard>();
 		maxDraws = (index == TZEENTCH) ? 5 : 2;
 		handKnown = false;
+		handSize = 0;
+		deck = rules.generateDeck(index);
+		hand = new ArrayList<ChaosCard>();
 		drawnThisTurn = 0;
 		discardedThisTurn = 0;
 		pp = rules.startingPP(index);
@@ -62,7 +62,7 @@ public class Player {
 		dacs = 0;
 		
 		upgrades_possible = rules.generateUpgrades(index);
-		upgrades_taken = new HashSet<Upgrade>();
+		upgrades_taken = new ArrayList<Upgrade>();
 
 		num_hits = new int[NUM_REGIONS];
 		num_kills = new int[NUM_REGIONS];
@@ -95,12 +95,18 @@ public class Player {
 		}
 	}
 
+	public int hasUpgrade(Upgrade.UpgradeType type) {
+		int count = 0;
+		for(Upgrade u: upgrades_taken) {
+			if(u.type.equals(type)) {
+				count++;
+			}
+		}
+		return count;
+	}
+
 	public Tick getDialTick() {
 		return dial.get(dial_position);
 	}
 
-	public boolean adjacent(Region region) {
-		// FIXME TODO
-		return true;
-	}
 }

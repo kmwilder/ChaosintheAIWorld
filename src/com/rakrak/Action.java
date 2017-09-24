@@ -1,5 +1,7 @@
 package com.rakrak;
 
+import static com.rakrak.Action.ActionType.MOVE_PLASTIC;
+
 public class Action {
 	// Simple container class?
 	public int player;
@@ -15,55 +17,53 @@ public class Action {
 		DISCARD_CARD,
 		DRAW_CARD,
 		PICK_UPGRADE,
-		PASS
+		PASS,
+		BGC
 	}
 
-	public Plastic target_plastic = null;
-	public ChaosCard target_card = null;
+	public int target_plastic;
+	public int target_card;
 	public ActionType actionType = null;
-	public Upgrade upgrade = null;
 	public int srcRegion;
 	public int dstRegion;
 	public int slot;
 
-	// Used for PASS, DRAW_CARD, DISCARD_CARD, KILL_PEASANT
+	// Used for PASS, DRAW_CARD, DISCARD_CARD, KILL_PEASANT, PICK_UPGRADE
 	Action(int player, ActionType actionType) {
 		this.player = player;
 		this.actionType = actionType;
 	}
 
-	// Used for MOVE_PLASTIC
-	Action(int player, ActionType actionType, Plastic target, int srcRegion, int dstRegion) {
+	// Blood God's Call needs a custom action :/
+	Action(int player, ActionType actionType, int dstRegion) {
 		this.player = player;
 		this.actionType = actionType;
-		this.target_plastic = target;
-		this.srcRegion = srcRegion;
 		this.dstRegion = dstRegion;
 	}
 
-	// Used for PLACE_CARD
-	Action(int player, ActionType actionType, ChaosCard card, int dstRegion, int slot) {
+	// Used for MOVE_PLASTIC
+	Action(int player, ActionType actionType, int target, int srcRegion, int dstRegion) {
 		this.player = player;
 		this.actionType = actionType;
-		this.target_card = card;
-		this.dstRegion = dstRegion;
-		this.slot = slot;
+		if(actionType == MOVE_PLASTIC) {
+			this.target_plastic = target;
+			this.srcRegion = srcRegion;
+			this.dstRegion = dstRegion;
+		} else {
+			// PLACE_CARD
+			this.target_card = target;
+			this.slot = srcRegion;
+			this.dstRegion = dstRegion;
+		}
 	}
 
 	// Used for KILL_PLASTIC
-	Action(int player, ActionType actionType, Plastic plastic, int region) {
+	Action(int player, ActionType actionType, int region, int plastic) {
 		this.player = player;
 		this.actionType = actionType;
 		this.target_plastic = plastic;
 		this.srcRegion = region;
 		this.dstRegion = region;
-	}
-
-	// Used for PICK_UPGRADE
-	Action(int player, ActionType actionType, Upgrade upgrade) {
-		this.player = player;
-		this.actionType = actionType;
-		this.upgrade = upgrade;
 	}
 
 	private double winProbability;

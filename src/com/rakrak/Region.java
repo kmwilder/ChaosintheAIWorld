@@ -3,6 +3,7 @@ package com.rakrak;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import static com.rakrak.PlayerIndex.*;
 
@@ -13,14 +14,12 @@ public class Region {
     public int index;
     public String name;
     public int value;
-    public Collection<Plastic> plasticSet;
+    public List<Plastic> plastic;
     public int[] corruption;
-    public int[] cultists;
-    public int[] warriors;
-    public int[] daemons;
     public ArrayList<ChaosCard> cards;
     public int num_cards = 0;
     private int[] adjacent;
+    public boolean populous;
 
     public int warpstones;
     public int peasants;
@@ -31,18 +30,16 @@ public class Region {
 
     private Rules rules;
 
-    Region (Rules rules, int index, String name, int value, int[] adjacencies) {
+    Region (Rules rules, int index, String name, int value, int[] adjacencies, boolean populous) {
         this.index = index;
         this.rules = rules;
         this.name = name;
         this.value = value;
         this.adjacent = adjacencies;
+        this.populous = populous;
 
         corruption = new int[NUM_PLAYERS];
-        cultists = new int[NUM_PLAYERS];
-        warriors = new int[NUM_PLAYERS];
-        daemons = new int[NUM_PLAYERS];
-        plasticSet = new HashSet<Plastic>(); // FIXME TODO replace the above stuff with this?
+        plastic = new ArrayList<Plastic>();
         cards = new ArrayList<ChaosCard>();
         num_cards = 0;
 
@@ -63,13 +60,10 @@ public class Region {
         // is this even needed? Or simply discard everything in a region at once, calling each card's discard?
     }
 
-    private boolean contains(Plastic plastic) {
-        return plasticSet.contains(plastic);
-    }
-
     public int getCardSlots() {
         return 2; // HORNED_RAT will change this
     }
+
     public boolean canPlayCard(int playerIndex, int slot) {
         // FIXME TODO
         return true;
@@ -94,7 +88,7 @@ public class Region {
     }
     public Collection<Plastic> getPlasticControlledBy(int playerIndex) {
         HashSet<Plastic> set = new HashSet<Plastic>();
-        for(Plastic p: plasticSet) {
+        for(Plastic p: plastic) {
             if(p.controlledBy == playerIndex) {
                 set.add(p);
             }
@@ -104,7 +98,7 @@ public class Region {
 
     public Collection<Plastic> getPlasticNotControlledBy(int playerIndex) {
         HashSet<Plastic> set = new HashSet<Plastic>();
-        for(Plastic p: plasticSet) {
+        for(Plastic p: plastic) {
             if(p.controlledBy != playerIndex) {
                 set.add(p);
             }

@@ -7,7 +7,7 @@ import java.util.ArrayList;
  */
 public class Tick {
     // Represents one tick on the dial
-    public enum DialType { VICTORY, VP, UPGRADE, DRAW_CARDS, TOKEN };
+    public enum DialType { START, VICTORY, VP, UPGRADE, DRAW_CARDS, TOKEN };
     public enum TokenAction { PLACE, MOVE, REMOVE };
     public enum TokenType { WARPSTONE, CORRUPTION, NOBLES, OLDWORLD };
 
@@ -24,7 +24,7 @@ public class Tick {
         // default constructor... try not to use it?
     }
 
-    // Used for VICTORY, UPGRADE types
+    // Used for VICTORY, UPGRADE, START types
     Tick(int threat, DialType type) {
         this.threat = threat;
         this.dialType = type;
