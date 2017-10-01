@@ -4,8 +4,7 @@ import java.util.*;
 
 import static com.rakrak.Action.ActionType.*;
 import static com.rakrak.GameState.GamePhase.*;
-import static com.rakrak.Rules.RegionName.*;
-import static com.rakrak.PlayerIndex.*;
+import static com.rakrak.Rules.Defines.*;
 
 /**
  * Created by Wilder on 9/6/2017.
@@ -18,12 +17,11 @@ public class GameState {
     enum GamePhase { OLDWORLD, DRAW, SUMMON, BATTLE, DOMINATE, CORRUPTION, END }
     enum EndGamePhase { HERO, OLDWORLD, DIALS }
 
-    private Rules rules;
     public Region[] regions;
     public Player[] players;
-	private int activePlayer;
 
 	// phases of the game
+    private int activePlayer;
     private GamePhase gamePhase;
 	private EndGamePhase endGamePhase;
 	private int currentRegion;
@@ -36,16 +34,14 @@ public class GameState {
 
 	GameState lastRound;
 
-    GameState(Rules rules) {
-        this.rules = rules;
-		
-        this.regions = rules.defineBoard();
+    GameState() {
+        this.regions = Rules.defineBoard();
 		
 		players = new Player[NUM_PLAYERS];
-		players[KHORNE] = new Player(rules, KHORNE);
-		players[NURGLE] = new Player(rules, NURGLE);
-		players[TZEENTCH] = new Player(rules, TZEENTCH);
-		players[SLAANESH] = new Player(rules, SLAANESH);
+		players[KHORNE] = new Player(KHORNE);
+		players[NURGLE] = new Player(NURGLE);
+		players[TZEENTCH] = new Player(TZEENTCH);
+		players[SLAANESH] = new Player(SLAANESH);
 		
 		activePlayer = KHORNE;
 		
@@ -58,7 +54,6 @@ public class GameState {
     }
 
     GameState(GameState source) {
-    	this.rules = rules;
 		this.regions = new Region[NUM_REGIONS];
 		for(int i = 0; i < NUM_REGIONS; i++) {
 			this.regions[i] = new Region(source.regions[i]);
@@ -93,6 +88,21 @@ public class GameState {
 		
 		return true;
 	}
+
+	public boolean loadDummyState() {
+	    // populate this with the start state of citow-pbf008
+        regions[NORSCA].warpstones = 1;
+        regions[TROLLCOUNTRY].warpstones = 1;
+        regions[EMPIRE].heroes = 1;
+        regions[BRETONNIA].heroes = 1;
+        regions[BRETONNIA].warpstones = 1;
+        regions[ESTALIA].nobles = 1;
+        regions[TILEA].peasants = 1;
+        regions[BORDERPRINCES].nobles = 1;
+        regions[BADLANDS].peasants = 1;
+
+        // FIXME TODO left off here
+    }
 	
 	public ArrayList<Action> getLegalActions(int playerIndex) {
 	    ArrayList<Action> actions = new ArrayList<Action>();
@@ -126,7 +136,7 @@ public class GameState {
 						// Place from reserve
 						for(int i = 0; i < player.reserve.size(); i++) {
 							Plastic p = player.reserve.get(i);
-							if(player.pp >= dstRegion.plasticCost(playerIndex, p)) {
+							if(player.pp >= p.getCost(this, dstRegionIndex)) {
 								actions.add(new Action(playerIndex, MOVE_PLASTIC, i, RESERVE, dstRegionIndex));
 							}
 						}
@@ -137,7 +147,7 @@ public class GameState {
 							if(srcRegionIndex != dstRegionIndex && srcRegion.canSummonOut()) {
 								for(int i = 0; i < srcRegion.plastic.size(); i++) {
 									Plastic p = srcRegion.plastic.get(i);
-									if(player.pp >= dstRegion.plasticCost(playerIndex, p)) {
+									if(player.pp >= p.getCost(this, dstRegionIndex)) {
 										actions.add(new Action(playerIndex, MOVE_PLASTIC, i, srcRegionIndex, dstRegionIndex));
 									}
 								}
@@ -147,10 +157,11 @@ public class GameState {
 
 					// Play a card to available slots
 					List<ChaosCard> hand = player.handKnown ? player.hand : player.deck;
-					for (ChaosCard card : hand) {
+                    for(int cardIndex = 0; cardIndex < hand.size(); cardIndex++) {
+                        ChaosCard card = hand.get(cardIndex);
 						for (int slot = 0; slot < dstRegion.getCardSlots(); slot++) {
-							if (dstRegion.canPlayCard(playerIndex, slot) && player.getPP() >= dstRegion.cardCost(playerIndex, card)) {
-								actions.add(new Action(playerIndex, PLACE_CARD, card, dstRegionIndex, slot));
+							if (dstRegion.canPlayCard(playerIndex, slot) && player.getPP() >= card.getCost(player, dstRegion)) {
+								actions.add(new Action(playerIndex, PLACE_CARD, cardIndex, dstRegionIndex, slot));
 							}
 						}
 					}
@@ -163,9 +174,10 @@ public class GameState {
 				// Choose hit allocation
 				boolean hit_allocatable = false;
 				Region region = regions[currentRegion];
-				for(Plastic p : region.getPlasticNotControlledBy(playerIndex)) {
-					if(player.num_hits[currentRegion] >= region.getDefense(playerIndex, p)) {
-						actions.add(new Action(playerIndex, KILL_PLASTIC, p, currentRegion));
+                for(int plasticIndex = 0; plasticIndex < region.plastic.size(); plasticIndex++) {
+                    Plastic p = region.plastic.get(plasticIndex);
+					if(p.controlledBy != playerIndex && player.num_hits[currentRegion] >= p.getDefense(this, currentRegion)) {
+						actions.add(new Action(playerIndex, KILL_PLASTIC, plasticIndex, currentRegion));
 						hit_allocatable = true;
 					}
 				}
@@ -300,6 +312,8 @@ public class GameState {
 	public List<GameState> resolve() {
 		// discard any must discards immediately
 
+        // FIXME TODO
+        return null;
 	}
 	
 	public Action getBestMove(int player, boolean print) {

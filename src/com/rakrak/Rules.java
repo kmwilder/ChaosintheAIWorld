@@ -2,41 +2,68 @@ package com.rakrak;
 
 import java.util.*;
 
-import static com.rakrak.Plastic.PlasticType.*;
-import static com.rakrak.Rules.RegionName.*;
-import static com.rakrak.PlayerIndex.*;
+import static com.rakrak.Rules.Defines.*;
 import static com.rakrak.Tick.DialType.*;
 import static com.rakrak.Tick.TokenAction.*;
 import static com.rakrak.Tick.TokenType.*;
 
 /**
  * Created by Wilder on 9/6/2017.
+ * Static, final class used to populate a bunch of starting state.
+ * Also includes the Defines subclass, used to act like cpp #define values so I can abuse raw arrays.
+ * Perhaps this project will teach me why that's a bad idea?
  */
-public class Rules {
+public final class Rules {
 
-    public static class RegionName {
-        static final int NORSCA = 0, TROLLCOUNTRY = 1, KISLEV = 2, EMPIRE = 3, BRETONNIA = 4, ESTALIA = 5, TILEA = 6, BORDERPRINCES = 7, BADLANDS = 8, RESERVE = -1;
-        static final int NUM_REGIONS = 9;
+    public static class Defines {
+        public static final int NORSCA = 0, TROLLCOUNTRY = 1, KISLEV = 2, EMPIRE = 3, BRETONNIA = 4, ESTALIA = 5, TILEA = 6, BORDERPRINCES = 7, BADLANDS = 8, RESERVE = -1;
+        public static final int NUM_REGIONS = 9;
+        public static final int BOARD = -1, KHORNE = 0, NURGLE = 1, TZEENTCH = 2, SLAANESH = 3;
+        public static final int NUM_PLAYERS = 4;
+        public static String getPlayerName(int index) {
+            switch(index) {
+                case BOARD: return "Board";
+                case KHORNE: return "Khorne";
+                case NURGLE: return "Nurgle";
+                case TZEENTCH: return "Tzeentch";
+                case SLAANESH: return "Slaanesh";
+                default: return "Invalid God!";
+            }
+        }
+        public static String getRegionName(int index) {
+            switch(index) {
+                case NORSCA: return "Norsca";
+                case TROLLCOUNTRY: return "Troll Country";
+                case KISLEV: return "Kislev";
+                case EMPIRE: return "The Empire";
+                case BRETONNIA: return "Bretonnia";
+                case ESTALIA: return "Estalia";
+                case TILEA: return "Tilea";
+                case BORDERPRINCES: return "The Border Princes";
+                case BADLANDS: return "The Badlands";
+                default: return "Invalid region!";
+            }
+        }
     }
 
-    Region[] defineBoard() {
+    public static Region[] defineBoard() {
         Region[] regions = new Region[NUM_REGIONS];
 
-        // create regions: pass in rules, index, "Name", value, [adjacency list], populous)
-        regions[NORSCA]         = new Region(this, NORSCA,          "Norsca",        1, new int[]{TROLLCOUNTRY}, false );
-        regions[TROLLCOUNTRY]   = new Region(this, TROLLCOUNTRY,    "Troll Country", 1, new int[]{NORSCA, KISLEV}, false);
-        regions[KISLEV]         = new Region(this, KISLEV,          "Kislev",        3, new int[]{TROLLCOUNTRY, EMPIRE}, true);
-        regions[EMPIRE]         = new Region(this, EMPIRE,          "The Empire",    5, new int[]{KISLEV, BRETONNIA, BORDERPRINCES}, true);
-        regions[BRETONNIA]      = new Region(this, BRETONNIA,       "Bretonnia",     3, new int[]{EMPIRE, ESTALIA, TILEA, BORDERPRINCES}, true);
-        regions[ESTALIA]        = new Region(this, ESTALIA,         "Estalia",       4, new int[]{BRETONNIA, TILEA}, true);
-        regions[TILEA]          = new Region(this, TILEA,           "Tilea",         2, new int[]{BRETONNIA, ESTALIA, BORDERPRINCES}, false);
-        regions[BORDERPRINCES]  = new Region(this, BORDERPRINCES,   "The Border Princes", 1, new int[]{EMPIRE, BRETONNIA, TILEA, BADLANDS}, false);
-        regions[BADLANDS]       = new Region(this, BADLANDS,        "The Badlands",  1, new int[]{BORDERPRINCES}, false);
+        // create regions: pass in index, value, [adjacency list], populous)
+        regions[NORSCA]         = new Region(NORSCA,        1, new int[]{TROLLCOUNTRY}, false );
+        regions[TROLLCOUNTRY]   = new Region(TROLLCOUNTRY,  1, new int[]{NORSCA, KISLEV}, false);
+        regions[KISLEV]         = new Region(KISLEV,        3, new int[]{TROLLCOUNTRY, EMPIRE}, true);
+        regions[EMPIRE]         = new Region(EMPIRE,        5, new int[]{KISLEV, BRETONNIA, BORDERPRINCES}, true);
+        regions[BRETONNIA]      = new Region(BRETONNIA,     3, new int[]{EMPIRE, ESTALIA, TILEA, BORDERPRINCES}, true);
+        regions[ESTALIA]        = new Region(ESTALIA,       4, new int[]{BRETONNIA, TILEA}, true);
+        regions[TILEA]          = new Region(TILEA,         2, new int[]{BRETONNIA, ESTALIA, BORDERPRINCES}, false);
+        regions[BORDERPRINCES]  = new Region(BORDERPRINCES, 1, new int[]{EMPIRE, BRETONNIA, TILEA, BADLANDS}, false);
+        regions[BADLANDS]       = new Region(BADLANDS,      1, new int[]{BORDERPRINCES}, false);
 
         return regions;
     }
 
-    public List<ChaosCard> generateDeck(int player) {
+    public static List<ChaosCard> generateDeck(int player) {
         List<ChaosCard> deck = new ArrayList<ChaosCard>();
         switch(player) {
             case KHORNE:
@@ -111,7 +138,7 @@ public class Rules {
         return deck;
     }
 
-    public int startingPP(int index) {
+    public static int startingPP(int index) {
         if(index == KHORNE) {
             return 7;
         } else {
@@ -119,7 +146,7 @@ public class Rules {
         }
     }
 
-    public List<Plastic> generateReserve(int index) {
+    public static List<Plastic> generateReserve(int index) {
         List<Plastic> list = new ArrayList<Plastic>();
         switch(index) {
             case KHORNE:
@@ -144,13 +171,13 @@ public class Rules {
                 for(int i = 0; i < 8; i++) {
                     list.add(new Acolyte());
                 }
-                for(int i = 3; i < 3; i++) {
+                for(int i = 0; i < 3; i++) {
                     list.add(new Horror());
                 }
                 list.add(new LordOfChange());
                 break;
             case SLAANESH:
-                for(int i=0; i < 6; i++) {
+                for(int i = 0; i < 6; i++) {
                     list.add(new Seductress());
                 }
                 for(int i = 0; i < 3; i++) {
@@ -161,11 +188,10 @@ public class Rules {
             default:
                 System.out.println("Error @ generateReserve for " + index);
         }
-        // FIXME TODO
         return list;
     }
 
-    public List<Tick> generateDial(int index) {
+    public static List<Tick> generateDial(int index) {
         List<Tick> dial = new ArrayList<Tick>();
         if(index == KHORNE) {
             dial.add(new Tick(3, START));
@@ -189,6 +215,7 @@ public class Rules {
             dial.add(new Tick(26, UPGRADE));
             dial.add(new Tick(30, VP, 3));
             dial.add(new Tick(33, TOKEN, REMOVE, 2, CORRUPTION));
+            dial.add(new Tick(0, VICTORY));
         } else if(index == TZEENTCH) {
             dial.add(new Tick(0, START));
             dial.add(new Tick(7, TOKEN, PLACE, 1, WARPSTONE));
@@ -213,11 +240,11 @@ public class Rules {
         return dial;
     }
 
-    public List<Upgrade> generateUpgrades(int index) {
+    public static List<Upgrade> generateUpgrades(int index) {
         List<Upgrade> upgrades = new ArrayList<Upgrade>();
         upgrades.add(new Upgrade(Upgrade.UpgradeType.CULTIST)); // TODO: t
         upgrades.add(new Upgrade(Upgrade.UpgradeType.WARRIOR)); // TODO: knts
-        upgrades.add(new Upgrade(Upgrade.UpgradeType.DEMON)); // TODO: knts
+        upgrades.add(new Upgrade(Upgrade.UpgradeType.DAEMON)); // TODO: knts
         switch(index) {
             case KHORNE:
                 upgrades.add(new Upgrade(Upgrade.UpgradeType.CARDS)); // todo

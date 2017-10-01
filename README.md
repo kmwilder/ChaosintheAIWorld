@@ -15,20 +15,18 @@ Possible problems:
 * Not truly minmax... maxmax? Support both every-man-for-himself, and all-conspiring-against-me.
  
  TODOs:
- * Implement Upgrade class
+ * Implement Upgrade class effects
  * Implement Action class
- * Implement Rules.startingPP, generateReserve, generateDeck, ...
  * Implement GameState.loadStateFromFile();
  * Implement Region.playCard()
  * Implement Tick getters
  
  Program Flow:
- * Main instances singlet Rules, initial GameState
+ * Main creates initial GameState
  * Main asks gameState to update itself from file.
  * Main finds out whose turn it is, asks for the best move
    * Need to extend this to generate states of possible unknown hands, find best moves over those states
  * Main prints out details about that move.
- 
 
  GameState.getBestMove(player)
  * explore all possible moves

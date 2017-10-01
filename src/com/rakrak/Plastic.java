@@ -1,26 +1,31 @@
 package com.rakrak;
 
 import static com.rakrak.Plastic.PlasticType.*;
-import static com.rakrak.PlayerIndex.*;
+import static com.rakrak.Rules.Defines.*;
 
 /**
  * Created by Wilder on 9/6/2017.
  */
-public class Plastic {
+public abstract class Plastic {
     // make this a base class / interface instead?
-    public int belongsTo;
-    public int controlledBy;
+    protected int belongsTo;
+    protected int controlledBy;
 
     public enum PlasticType{ CULTIST, WARRIOR, DAEMON };
-    public PlasticType type;
-    public String name;
+    protected PlasticType type;
+    protected String name;
 
-    public int cost;
-    public int dice;
-    public int defense;
-    public boolean warpShielded;
+    protected int cost;
+    protected int dice;
+    protected int defense;
+    protected boolean warpShielded;
 
     Plastic() { }
+
+    public String getName() { return name; }
+    public PlasticType getType() { return type; }
+    public boolean isWarpShielded() { return warpShielded; }
+    public void setWarpShielded(boolean ws) { warpShielded = ws; }
 
     public int getCost(GameState gameState, int region) {
         return cost;
@@ -28,7 +33,9 @@ public class Plastic {
     public int getDefense(GameState gameState, int region) {
         return defense;
     }
+
     public int getAttacks(GameState gameState, int region) { return dice; }
+    public int getAttacks(Region region) { return dice; } // fixme should only be this or the above
 
     public void newTurn() {
         controlledBy = belongsTo;
@@ -36,21 +43,27 @@ public class Plastic {
     }
 }
 
-public class Bloodsworn extends Plastic {
+class Bloodsworn extends Plastic {
     Bloodsworn() {
-        belongsTo = KHORNE; controlledBy = KHORNE;
-        cost = 1; dice = 0; defense = 1; type = CULTIST;
+        belongsTo = KHORNE;
+        controlledBy = KHORNE;
+        cost = 1;
+        dice = 0;
+        defense = 1;
+        type = CULTIST;
         name = "Bloodsworn";
     }
+
     public int getAttacks(GameState gameState, int region) {
         int attacks = super.getAttacks(gameState, region);
-        if(gameState.players[KHORNE].hasUpgrade(Upgrade.UpgradeType.CULTIST) > 0) {
+        if (gameState.players[KHORNE].hasUpgrade(Upgrade.UpgradeType.CULTIST) > 0) {
             attacks++;
         }
         return attacks;
+    }
 }
 
-public class Bloodletter extends Plastic {
+class Bloodletter extends Plastic {
     Bloodletter() {
         belongsTo = KHORNE; controlledBy = KHORNE;
         cost = 2; dice = 2; defense = 1; type = WARRIOR;
@@ -58,7 +71,7 @@ public class Bloodletter extends Plastic {
     }
 }
 
-public class Bloodthirster extends Plastic {
+class Bloodthirster extends Plastic {
     Bloodthirster() {
         belongsTo = KHORNE; controlledBy = KHORNE;
         cost = 3; dice = 4; defense = 3; type = DAEMON;
@@ -66,7 +79,7 @@ public class Bloodthirster extends Plastic {
     }
 }
 
-public class Leper extends Plastic {
+class Leper extends Plastic {
     private boolean upgrade;
     Leper() {
         belongsTo = NURGLE; controlledBy = NURGLE;
@@ -79,7 +92,7 @@ public class Leper extends Plastic {
         super.newTurn();
     }
     public int getCost(GameState gameState, int region) {
-        int cost = super.cost(gameState, region);
+        int cost = super.getCost(gameState, region);
 
         // Reduce cost by one if no figures present
         if(gameState.players[NURGLE].hasUpgrade(Upgrade.UpgradeType.CULTIST) > 0) {
@@ -94,9 +107,8 @@ public class Leper extends Plastic {
         return cost;
     }
 }
-}
 
-public class Plaguebearer extends Plastic {
+class Plaguebearer extends Plastic {
     Plaguebearer() {
         belongsTo = NURGLE; controlledBy = NURGLE;
         cost = 1; dice = 1; defense = 1; type = WARRIOR;
@@ -104,7 +116,7 @@ public class Plaguebearer extends Plastic {
     }
 }
 
-public class GreatUncleanOne extends Plastic {
+class GreatUncleanOne extends Plastic {
     GreatUncleanOne() {
         belongsTo = NURGLE; controlledBy = NURGLE;
         cost = 3; dice = 3; defense = 3; type = DAEMON;
@@ -112,7 +124,7 @@ public class GreatUncleanOne extends Plastic {
     }
 }
 
-public class Acolyte extends Plastic {
+class Acolyte extends Plastic {
     Acolyte() {
         belongsTo = TZEENTCH; controlledBy = TZEENTCH;
         cost = 1; dice = 0; defense = 1; type = CULTIST;
@@ -120,7 +132,7 @@ public class Acolyte extends Plastic {
     }
 }
 
-public class Horror extends Plastic {
+class Horror extends Plastic {
     Horror() {
         belongsTo = TZEENTCH; controlledBy = TZEENTCH;
         cost = 2; dice = 1; defense = 2; type = WARRIOR;
@@ -128,7 +140,7 @@ public class Horror extends Plastic {
     }
 }
 
-public class LordOfChange extends Plastic {
+class LordOfChange extends Plastic {
     LordOfChange() {
         belongsTo = TZEENTCH; controlledBy = TZEENTCH;
         cost = 3; dice = 3; defense = 2; type = DAEMON;
@@ -136,7 +148,7 @@ public class LordOfChange extends Plastic {
     }
 }
 
-public class Seductress extends Plastic {
+class Seductress extends Plastic {
     Seductress() {
         belongsTo = SLAANESH; controlledBy = SLAANESH;
         cost = 1; dice = 0; defense = 1; type = CULTIST;
@@ -151,7 +163,7 @@ public class Seductress extends Plastic {
     }
 }
 
-public class Daemonette extends Plastic {
+class Daemonette extends Plastic {
     Daemonette() {
         belongsTo = SLAANESH; controlledBy = SLAANESH;
         cost = 2; dice = 1; defense = 2; type = WARRIOR;
@@ -159,10 +171,10 @@ public class Daemonette extends Plastic {
     }
 }
 
-public class KeeperOfSecrets extends Plastic {
+class KeeperOfSecrets extends Plastic {
     KeeperOfSecrets() {
         belongsTo = SLAANESH; controlledBy = SLAANESH;
-        cost = 3; dice = 2; defense = 4;
+        cost = 3; dice = 2; defense = 4; type = DAEMON;
         name = "Keeper of Secrets";
     }
 }

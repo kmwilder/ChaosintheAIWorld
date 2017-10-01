@@ -5,7 +5,8 @@ import java.util.List;
 
 import static com.rakrak.Action.ActionType.*;
 import static com.rakrak.Plastic.PlasticType.*;
-import static com.rakrak.PlayerIndex.*;
+import static com.rakrak.Rules.Defines.*;
+import static com.rakrak.Region.RegionEffect.*;
 
 /**
  * Created by Wilder on 9/6/2017.
@@ -14,44 +15,46 @@ public abstract class ChaosCard {
 	protected int cost;
 	protected String name;
 	protected boolean magic;
-//	private String description;
-//	private boolean inPlay;
-//	private Region region;
 	protected boolean needstarget = false;
 	protected boolean needsdestination = false;
 	protected int target;
 	protected int destination;
 	
 	public int getCost(Player player, Region region) {
-		if(region.tempStasis && player.index != TZEENTCH) {
+		if(region.hasEffect(TEMP_STASIS) && player.index != TZEENTCH) {
 			return cost+2;
 		}
 		return cost;
 	}
-	public int getPower(int player, Region region) {
+	public int getPower(Player player, Region region) {
 		// check for cost modifiers in region
 		return cost;
 	}
 	
 	public boolean play(Player player, Region region) {
-		int cost = getCost(region);
+		int cost = getCost(player, region);
 		player.pp -= cost;
 		region.playCard(this);
 		return true;
 		// FIXME TODO make sure this works well w/ other features
 	}
 
+	public String getName() { return name; }
+	public boolean isMagic() { return magic; }
 	public boolean leaveNextTurn(GameState gameState, int region) { return false; }
-	public abstract void resolve(GameState gameState, int player, int region);
+	public void resolve(GameState gameState, int region) { /* do nothing by default */ }
+
 	public boolean needsTarget() { return needstarget; }
 	public List<Integer> validTargets(GameState gameState, int region) { return new ArrayList<Integer>(); }
-	public void set_target(int target) { this.target = target; }
+	public void setTarget(int target) { this.target = target; }
+
 	public boolean needsDestination() { return needsdestination; }
+	public List<Integer> validDestinations() { return new ArrayList<Integer>(); }
 	public void setDestination(int destination) { this.destination = destination; }
 }
 
 // Tzeentch
-public class DrainPower extends ChaosCard {
+class DrainPower extends ChaosCard {
 	DrainPower() {
 		cost = 0; magic = false; name = "Drain Power";
 	}
@@ -72,16 +75,17 @@ public class DrainPower extends ChaosCard {
 	}
 }
 
-public class ChangerOfWays extends ChaosCard {
+class ChangerOfWays extends ChaosCard {
 	ChangerOfWays() {
 		cost = 0; magic = true; name = "Changer of Ways"; needstarget = false;
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].changered = true;
+		gameState.regions[region].addEffect(CHANGER_OF_WAYS);
+        // FIXME TODO are there follow-on actions here? (Cancel other cards?)
 	}
 }
 
-public class WarpShield extends ChaosCard {
+class WarpShield extends ChaosCard {
 	WarpShield() {
 		cost = 0; magic = false; name = "Warp Shield"; needstarget = true;
 	}
@@ -99,16 +103,16 @@ public class WarpShield extends ChaosCard {
 	}
 }
 
-public class TemporalStasis extends ChaosCard {
+class TemporalStasis extends ChaosCard {
 	TemporalStasis() {
 		cost = 1; magic = true; name = "Temporal Stasis"; needstarget = false;
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].tempStasis = true;
+		gameState.regions[region].addEffect(TEMP_STASIS);
 	}
 }
 
-public class MeddlingOfSkaven extends ChaosCard {
+class MeddlingOfSkaven extends ChaosCard {
 	MeddlingOfSkaven() {
 		cost = 1; magic = false; name = "The Meddling of Skaven"; needstarget = true;
 	}
@@ -131,12 +135,12 @@ public class MeddlingOfSkaven extends ChaosCard {
 	}
 }
 
-public class Teleport extends ChaosCard {
+class Teleport extends ChaosCard {
 	Teleport() {
 		cost = 1; magic = false; name = "Teleport"; needstarget = true; needsdestination = true;
 	}
 	public void resolve(GameState gameState, int region) {
-		if( !gameState.regions[region].fieldOfCarnage || gameState.regions[region].plastic.get(target).belongsTo == KHORNE)  {
+		if( !gameState.regions[region].hasEffect(FIELD_OF_CARNAGE) || gameState.regions[region].plastic.get(target).belongsTo == KHORNE)  {
 			gameState.queue(new Action(BOARD, MOVE_PLASTIC, target, region, destination));
 		}
 	}
@@ -152,7 +156,7 @@ public class Teleport extends ChaosCard {
 	}
 }
 
-public class PersistenceOfChange extends ChaosCard {
+class PersistenceOfChange extends ChaosCard {
 	PersistenceOfChange() {
 		cost = 1; magic = true; name = "The Persistence of Change";
 	}
@@ -164,59 +168,59 @@ public class PersistenceOfChange extends ChaosCard {
 	}
 }
 
-public class Dazzle extends ChaosCard {
+class Dazzle extends ChaosCard {
 	Dazzle() {
 		cost = 2; magic = true; name = "Dazzle";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].dazzle = true;
+		gameState.regions[region].addEffect(DAZZLE);
 	}
 }
 
-public class PlagueTouch extends ChaosCard {
+class PlagueTouch extends ChaosCard {
 	PlagueTouch() {
 		cost = 0; magic = false; name = "Plague Touch";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].plagueTouch = true;
+		gameState.regions[region].addEffect(PLAGUE_TOUCH);
 	}
 }
 
-public class PlagueAura extends ChaosCard {
+class PlagueAura extends ChaosCard {
 	PlagueAura() {
 		cost = 0; magic = true; name = "Plague Aura";
 	}
 	public void resolve(GameState gameState, int region) {
 		// no effect via resolve
 	}
-	public int getPower(int player, Region region) {
-		int power = super.getPower();
-		if(!region.changered) {
+	public int getPower(Player player, Region region) {
+		int power = super.getPower(player, region);
+		if(!region.hasEffect(CHANGER_OF_WAYS)) {
 			power += region.corruption[NURGLE];
 		}
 		return power;
 	}
 }
 
-public class RainOfPus extends ChaosCard {
+class RainOfPus extends ChaosCard {
 	RainOfPus() {
 		cost = 1; magic = false; name = "Rain Of Pus";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].rainOfPus = true;
+		gameState.regions[region].addEffect(RAIN_OF_PUS);
 	}
 }
 
-public class Influenza extends ChaosCard {
+class Influenza extends ChaosCard {
 	Influenza() {
 		cost = 1; magic = false; name = "Influenza";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].influenza = true;
+		gameState.regions[region].addEffect(INFLUENZA);
 	}
 }
 
-public class UltimatePlague extends ChaosCard {
+class UltimatePlague extends ChaosCard {
 	UltimatePlague() {
 		cost = 3; magic = false; name = "Ultimate Plague";
 	}
@@ -229,34 +233,34 @@ public class UltimatePlague extends ChaosCard {
 	}
 }
 
-public class QuickenDecay extends ChaosCard {
+class QuickenDecay extends ChaosCard {
 	QuickenDecay() {
 		cost = 1; magic = false; name = "Quicken Decay";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].quickenDecay = true;
+		gameState.regions[region].addEffect(QUICKEN_DECAY);
 	}
 }
 
-public class TheFinalRotting extends ChaosCard {
+class TheFinalRotting extends ChaosCard {
 	TheFinalRotting() {
 		cost = 2; magic = false; name = "The Final Rotting";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].finalRotting = true;
+		gameState.regions[region].addEffect(FINAL_ROTTING);
 	}
 }
 
-public class TheStenchOfDeath extends ChaosCard {
+class TheStenchOfDeath extends ChaosCard {
 	TheStenchOfDeath() {
 		cost = 3; magic = false; name = "The Stench of Death";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].stenchOfDeath = true;
+		gameState.regions[region].addEffect(STENCH_OF_DEATH);
 	}
 }
 
-public class PerverseInfiltration extends ChaosCard {
+class PerverseInfiltration extends ChaosCard {
 	PerverseInfiltration() {
 		cost = 0; magic = false; name = "Perverse Infiltration";
 	}
@@ -265,25 +269,25 @@ public class PerverseInfiltration extends ChaosCard {
 	}
 }
 
-public class AbyssalPact extends ChaosCard {
+class AbyssalPact extends ChaosCard {
 	AbyssalPact() {
 		cost = 0; magic = true; name = "Abyssal Pact";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].abyssalPact = true;
+		gameState.regions[region].addEffect(ABYSSAL_PACT);
 	}
 }
 
-public class InsidiousLies extends ChaosCard {
+class InsidiousLies extends ChaosCard {
 	InsidiousLies() {
 		cost = 1; magic = false; name = "Insidious Lies";
 	}
 	public void resolve(GameState gameState, int region) {
 		// no effect
 	}
-	public int getPower(int player, Region region) {
+	public int getPower(Player player, Region region) {
 		int power = super.getPower(player, region);
-		if(!region.changered) {
+		if(!region.hasEffect(CHANGER_OF_WAYS)) {
 			power += region.heroes * 2;
 			power += region.nobles * 2;
 		}
@@ -291,7 +295,7 @@ public class InsidiousLies extends ChaosCard {
 	}
 }
 
-public class DarkInfluence extends ChaosCard {
+class DarkInfluence extends ChaosCard {
 	DarkInfluence() {
 		cost = 1; magic = true; name = "Dark Influence"; needstarget = true; needsdestination=true;
 	}
@@ -319,7 +323,7 @@ public class DarkInfluence extends ChaosCard {
 	}
 }
 
-public class SoporificMusk extends ChaosCard {
+class SoporificMusk extends ChaosCard {
 	SoporificMusk() {
 		cost = 2; magic = true; name = "Soporific Musk"; needstarget = true;
 	}
@@ -337,16 +341,16 @@ public class SoporificMusk extends ChaosCard {
 	}
 }
 
-public class FieldOfEcstasy extends ChaosCard {
+class FieldOfEcstasy extends ChaosCard {
 	FieldOfEcstasy() {
 		cost = 2; magic = false; name = "Field of Ecstasy";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].fieldOfEcstasy = true;
+		gameState.regions[region].addEffect(FIELD_OF_ECSTASY);
 	}
 }
 
-public class DegenerateRoyalty extends ChaosCard {
+class DegenerateRoyalty extends ChaosCard {
 	DegenerateRoyalty() {
 		cost = 3; magic = false; name = "Degenerate Royalty";
 	}
@@ -366,45 +370,48 @@ public class DegenerateRoyalty extends ChaosCard {
 	}
 }
 
-public class BloodFrenzy extends ChaosCard {
+class BloodFrenzy extends ChaosCard {
 	BloodFrenzy() {
 		cost = 0; magic = false; name = "Blood Frenzy";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].bloodFrenzy = true;
+		gameState.regions[region].addEffect(BLOOD_FRENZY);
 	}
 }
 
-public class RitualSlaying extends ChaosCard {
+class RitualSlaying extends ChaosCard {
 	RitualSlaying() {
 		cost = 1; magic = false; name = "Ritual Slaying";
 	}
+	public void resolve(GameState gameState, int region) {
+	    // FIXME TODO
+    }
 	// FIXME TODO
 }
 
-public class FieldOfCarnage extends ChaosCard {
+class FieldOfCarnage extends ChaosCard {
 	FieldOfCarnage() {
 		cost = 1; magic = false; name = "Field of Carnage";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].fieldOfCarnage = true;
+		gameState.regions[region].addEffect(FIELD_OF_CARNAGE);
 	}
 }
 
-public class BattleCry extends ChaosCard {
+class BattleCry extends ChaosCard {
 	BattleCry() {
 		cost = 1; magic = false; name = "BattleCry";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].battleCry = true;
+		gameState.regions[region].addEffect(BATTLE_CRY);
 	}
 }
 
-public class TheSkullThrone extends ChaosCard {
+class TheSkullThrone extends ChaosCard {
 	TheSkullThrone() {
 		cost = 1; magic = false; name = "The Skull Throne";
 	}
-	public int getPower(int player, Region region) {
+	public int getPower(Player player, Region region) {
 		int power = super.getPower(player, region);
 
 		// only add extra power to first skullthrone in region
@@ -419,18 +426,21 @@ public class TheSkullThrone extends ChaosCard {
 		}
 		return power;
 	}
+	public void resolve(GameState gameState, int region) {
+	    // no resolution needed
+    }
 }
 
-public class RebornInBlood extends ChaosCard {
+class RebornInBlood extends ChaosCard {
 	RebornInBlood() {
 		cost = 2; magic = false; name = "Reborn In Blood";
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.regions[region].rebornInBlood = true;
+		gameState.regions[region].addEffect(REBORN_IN_BLOOD);
 	}
 }
 
-public class TheBloodGodsCall extends ChaosCard {
+class TheBloodGodsCall extends ChaosCard {
 	TheBloodGodsCall() {
 		cost = 2; magic = false; name = "The Blood God's Call";
 	}

@@ -1,25 +1,22 @@
 package com.rakrak;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
-import static com.rakrak.PlayerIndex.*;
+import static com.rakrak.Rules.Defines.*;
 
 /**
  * Created by Wilder on 9/6/2017.
  */
 public class Region {
-    public int index;
-    public String name;
-    public int value;
+    private final int index;
+    private final int value;
+    private final int[] adjacent;
+    private final boolean populous;
+
     public List<Plastic> plastic;
     public int[] corruption;
-    public ArrayList<ChaosCard> cards;
-    public int num_cards = 0;
-    private int[] adjacent;
-    public boolean populous;
+    public List<ChaosCard> cards;
+    public int num_cards = 0; // FIXME TODO is this needed?
 
     public int warpstones;
     public int peasants;
@@ -28,12 +25,14 @@ public class Region {
     public int skaven;
     public int events;
 
-    private Rules rules;
+    public enum RegionEffect { TEMP_STASIS, CHANGER_OF_WAYS, FIELD_OF_CARNAGE, DAZZLE, PLAGUE_TOUCH,
+        RAIN_OF_PUS, INFLUENZA, QUICKEN_DECAY, FINAL_ROTTING, STENCH_OF_DEATH, ABYSSAL_PACT, FIELD_OF_ECSTASY,
+        BLOOD_FRENZY, BATTLE_CRY, REBORN_IN_BLOOD
+    };
+    private EnumSet<RegionEffect> effects;
 
-    Region (Rules rules, int index, String name, int value, int[] adjacencies, boolean populous) {
+    Region (int index, int value, int[] adjacencies, boolean populous) {
         this.index = index;
-        this.rules = rules;
-        this.name = name;
         this.value = value;
         this.adjacent = adjacencies;
         this.populous = populous;
@@ -49,6 +48,36 @@ public class Region {
         heroes = 0;
         skaven = 0;
         events = 0;
+
+        effects = EnumSet.noneOf(RegionEffect.class);
+    }
+
+    Region (Region source) {
+        this.index = source.index;
+        this.value = source.value;
+        this.adjacent = source.adjacent;
+        this.populous = source.populous;
+
+        this.corruption = new int[NUM_PLAYERS];
+        for(int i = 0; i < NUM_PLAYERS; i++) {
+            corruption[i] = source.corruption[i];
+        }
+        this.plastic = new ArrayList<Plastic>(source.plastic);
+        this.cards = new ArrayList<ChaosCard>(source.cards);
+        this.num_cards = source.num_cards;
+
+        this.warpstones = source.warpstones;
+        this.peasants = source.peasants;
+        this.nobles = source.nobles;
+        this.heroes = source.heroes;
+        this.skaven = source.skaven;
+        this.events = source.events;
+
+        effects = source.effects.clone();
+    }
+
+    public String getName() {
+        return Rules.Defines.getRegionName(index);
     }
 
     public void playCard(ChaosCard card) {
@@ -68,24 +97,26 @@ public class Region {
         // FIXME TODO
         return true;
     }
-    public int cardCost(int playerIndex, ChaosCard card) {
+    public int cardCost(Player player, ChaosCard card) {
         // FIXME TODO
-        return card.getCost(this);
+        return card.getCost(player, this);
     }
 
-    public int cardPower(int playerIndex, ChaosCard card) {
+    public int cardPower(Player player, ChaosCard card) {
         // FIXME TODO
-        return card.getPower(this);
+        return card.getPower(player, this);
     }
-
-    public int plasticCost(int playerIndex, Plastic plastic) {
+/*
+    public int plasticCost(GameState gameState, Plastic plastic) {
         // FIXME TODO
         return plastic.getCost();
     }
+
     public int getDefense(int playerIndex, Plastic plastic) {
         // FIXME TODO
         return plastic.getDefense();
     }
+    */
     public Collection<Plastic> getPlasticControlledBy(int playerIndex) {
         HashSet<Plastic> set = new HashSet<Plastic>();
         for(Plastic p: plastic) {
@@ -109,5 +140,16 @@ public class Region {
     public boolean canSummonOut() {
         // FIXME TODO
         return true;
+    }
+
+    public void addEffect(RegionEffect effect) {
+        effects.add(effect);
+    }
+    public void removeEffect(RegionEffect effect) {
+        effects.remove(effect);
+
+    }
+    public boolean hasEffect(RegionEffect effect) {
+        return effects.contains(effect);
     }
 }

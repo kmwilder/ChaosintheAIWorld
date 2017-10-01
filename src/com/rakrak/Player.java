@@ -2,8 +2,7 @@ package com.rakrak;
 
 import java.util.*;
 
-import static com.rakrak.PlayerIndex.*;
-import static com.rakrak.Rules.RegionName.NUM_REGIONS;
+import static com.rakrak.Rules.Defines.*;
 
 /**
  * Created by Wilder on 9/6/2017.
@@ -15,7 +14,6 @@ public class Player {
 	public boolean handKnown;
 
 	// Game-wide vars
-	private Rules rules;
 	public int vp;
 	public List<Tick> dial;
 	public int dial_position;
@@ -43,33 +41,36 @@ public class Player {
 	// End phase
 	public int ticks;
 
-	Player(Rules rules, int index) {
-		name = PlayerIndex.getPlayerName(index);
+	Player(int index) {
+		name = getPlayerName(index);
 		maxDraws = (index == TZEENTCH) ? 5 : 2;
 		handKnown = false;
 		handSize = 0;
-		deck = rules.generateDeck(index);
+		deck = Rules.generateDeck(index);
 		hand = new ArrayList<ChaosCard>();
 		drawnThisTurn = 0;
 		discardedThisTurn = 0;
-		pp = rules.startingPP(index);
+		pp = Rules.startingPP(index);
 		vp = 0;
 
-		reserve = rules.generateReserve(index);
+		reserve = Rules.generateReserve(index);
 		
-		dial = rules.generateDial(index);
+		dial = Rules.generateDial(index);
 		dial_position = 0;
 		dacs = 0;
 		
-		upgrades_possible = rules.generateUpgrades(index);
+		upgrades_possible = Rules.generateUpgrades(index);
 		upgrades_taken = new ArrayList<Upgrade>();
 
 		num_hits = new int[NUM_REGIONS];
 		num_kills = new int[NUM_REGIONS];
-		
-		this.rules = rules;
+
 		this.index = index;
 	}
+
+	Player(Player source) {
+        // FIXME TODO
+    }
 	
 	public int getVP() {
 		return vp;
@@ -98,7 +99,7 @@ public class Player {
 	public int hasUpgrade(Upgrade.UpgradeType type) {
 		int count = 0;
 		for(Upgrade u: upgrades_taken) {
-			if(u.type.equals(type)) {
+			if(u.getType().equals(type)) {
 				count++;
 			}
 		}
@@ -108,5 +109,9 @@ public class Player {
 	public Tick getDialTick() {
 		return dial.get(dial_position);
 	}
+
+	public void newTurn() {
+	    // FIXME TODO reset temp states;
+    }
 
 }
