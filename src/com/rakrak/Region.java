@@ -27,7 +27,8 @@ public class Region {
 
     public enum RegionEffect { TEMP_STASIS, CHANGER_OF_WAYS, FIELD_OF_CARNAGE, DAZZLE, PLAGUE_TOUCH,
         RAIN_OF_PUS, INFLUENZA, QUICKEN_DECAY, FINAL_ROTTING, STENCH_OF_DEATH, ABYSSAL_PACT, FIELD_OF_ECSTASY,
-        BLOOD_FRENZY, BATTLE_CRY, REBORN_IN_BLOOD
+        BLOOD_FRENZY, BATTLE_CRY, REBORN_IN_BLOOD,
+        PEASANT_UPRISING, GREENSKINS_INVADE
     };
     private EnumSet<RegionEffect> effects;
 
@@ -78,6 +79,9 @@ public class Region {
 
     public String getName() {
         return Rules.Defines.getRegionName(index);
+    }
+    public int[] getAdjacencies() {
+        return adjacent;
     }
 
     public void playCard(ChaosCard card) {

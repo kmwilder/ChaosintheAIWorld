@@ -3,16 +3,27 @@
 
 Class GameState
     Contains:
-        Regions
-        Players
-        gamePhase
-        endGamePhase
-        activePlayer;
-        currentRegion;
-        probability
-        actionQueue
-        GameState lastRound;
+        State: Regions, Players, GameState lastRound;
+        State: oldWorldDeck, oldWorldDrawn, oldWorldTrack
+        State info: gamePhase, endGamePhase, activePlayer, currentRegion;
+        Tree traversal: probability
+        Should be removed: actionQueue
     Majority of turn logic
+    Goal: Exhaustively search decision space.
+        Depth-first tree generation.
+        When node is fully evaluated, save win probabilities for each god & propagate upwards.
+            Can prune ourselves as we prop upwards:
+            
+            gameState.evaluate() {
+                // go through P=1 items until fork
+                foreach branch:
+                    clone gameState
+                    clone takes branch
+                    clone.evaluate() (or some other action);
+                    if(prob branch) { win_probs += prob * clone.win_probs() }
+                    else { decision: win_probs = clone.win_probs (based on minmax, max, etc) }
+                prune branches, return
+                    makeDecision() or calculateProbabilities
 
 Class Plastic -- Abstract class, implemented by various gods' units
     getters/setters:

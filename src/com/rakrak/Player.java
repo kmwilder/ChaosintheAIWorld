@@ -19,13 +19,14 @@ public class Player {
 	public int dial_position;
 	public List<Upgrade> upgrades_possible;
 	public List<Upgrade> upgrades_taken;
+    public int peasants;
 
 	// Turn-wide vars
 	public int pp;
 	public List<ChaosCard> deck;
 	public List<ChaosCard> hand;
 	public int handSize;
-	public List<ChaosCard> discard;
+	public List<ChaosCard> discardPile;
 	public List<Plastic> reserve;
 	public int dacs;
 
@@ -52,6 +53,7 @@ public class Player {
 		discardedThisTurn = 0;
 		pp = Rules.startingPP(index);
 		vp = 0;
+        peasants = 0;
 
 		reserve = Rules.generateReserve(index);
 		
@@ -109,6 +111,14 @@ public class Player {
 	public Tick getDialTick() {
 		return dial.get(dial_position);
 	}
+	public int getThreat() { return dial.get(dial_position).getThreat(); }
+
+	public void drawCard() {
+	    // FIXME TODO
+    }
+    public void discard() {
+        // FIXME TODO
+    }
 
 	public void newTurn() {
 	    // FIXME TODO reset temp states;

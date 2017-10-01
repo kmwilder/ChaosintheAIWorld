@@ -266,4 +266,41 @@ public final class Rules {
         return upgrades;
     }
 
+    public static List<OldWorldCard> generateOldWorldDeck() {
+        List<OldWorldCard> deck = new ArrayList<OldWorldCard>();
+        deck.add(new PlungedIntoChaos());
+        deck.add(new PlungedIntoChaos());
+        deck.add(new PlungedIntoChaos());
+        deck.add(new PlungedIntoChaos());
+
+        deck.add(new PeasantUprising());
+        deck.add(new PeasantUprising());
+
+        deck.add(new UpFromSkavenblight());
+        deck.add(new UpFromSkavenblight());
+
+        deck.add(new MeteorShowers());
+        deck.add(new MeteorShowers());
+
+        // One-offs
+        deck.add(new WarpstoneDiscovery());
+        deck.add(new TheCrusadeIsCome());
+        deck.add(new GreenskinsInvade());
+        deck.add(new DwarfTrollslayers());
+        deck.add(new TheHornedOnesDue());
+        deck.add(new TeclisAidsTheEmpire());
+        deck.add(new DarkElfCorsairs());
+        deck.add(new NorseReavers());
+        deck.add(new FranzsDecree());
+        deck.add(new Skavengers());
+        deck.add(new MassExodus());
+        deck.add(new ElectorsArise());
+        deck.add(new WitchHunters());
+        deck.add(new DivineInspiration());
+        deck.add(new BretonnianKnights());
+        deck.add(new RoadWardens());
+
+        return deck;
+    }
+
 }
