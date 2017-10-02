@@ -13,11 +13,13 @@ public class Region {
     private final int[] adjacent;
     private final boolean populous;
 
+
     public List<Plastic> plastic;
     public int[] corruption;
     public List<ChaosCard> cards;
     public int num_cards = 0; // FIXME TODO is this needed?
 
+    public boolean ruined;
     public int warpstones;
     public int peasants;
     public int nobles;
@@ -37,6 +39,7 @@ public class Region {
         this.value = value;
         this.adjacent = adjacencies;
         this.populous = populous;
+        this.ruined = false;
 
         corruption = new int[NUM_PLAYERS];
         plastic = new ArrayList<Plastic>();
@@ -58,6 +61,7 @@ public class Region {
         this.value = source.value;
         this.adjacent = source.adjacent;
         this.populous = source.populous;
+        this.ruined = source.ruined;
 
         this.corruption = new int[NUM_PLAYERS];
         for(int i = 0; i < NUM_PLAYERS; i++) {
@@ -82,6 +86,13 @@ public class Region {
     }
     public int[] getAdjacencies() {
         return adjacent;
+    }
+
+    public void newTurn() {
+        effects = EnumSet.noneOf(RegionEffect.class);
+        for(Plastic p: plastic) {
+            p.newTurn();
+        }
     }
 
     public void playCard(ChaosCard card) {

@@ -2,11 +2,9 @@ package com.rakrak;
 
 import java.util.*;
 
-import static com.rakrak.Action.ActionType.*;
-import static com.rakrak.GameState.BranchType.DECISION;
-import static com.rakrak.GameState.BranchType.PROBABILITY;
-import static com.rakrak.GameState.GamePhase.*;
+import static com.rakrak.GameState.BranchType.*;
 import static com.rakrak.Rules.Defines.*;
+import static com.rakrak.GameState.Defines.*;
 
 /**
  * Created by Wilder on 9/6/2017.
@@ -15,9 +13,17 @@ import static com.rakrak.Rules.Defines.*;
  *      Agents, to reason about the game.
  */
 public class GameState {
-
-    enum GamePhase { OLDWORLD, DRAW, SUMMON, BATTLE, DOMINATE, CORRUPTION, END }
-    enum EndGamePhase { HERO, OLDWORLD, DIALS }
+    public static class Defines {
+        public static final int MINMAX = 0, MAX = 1;
+        public static final int DECISION_POLICY = MAX;
+        public static final boolean VERBOSE = true;
+        public static final boolean EARLY_END = true; // shrinks numbers for debugging
+        public static void dbgPrint(String str) {
+            if(VERBOSE) {
+                System.out.println(str);
+            }
+        }
+    }
     enum BranchType { NONE, PROBABILITY, DECISION }
 
     public Region[] regions;
@@ -25,13 +31,12 @@ public class GameState {
 
 	// phases of the game
     private int activePlayer;
-    private GamePhase gamePhase;
-	private EndGamePhase endGamePhase;
 	private int currentRegion;
 
     // Old world track
     private List<OldWorldCard> oldWorldDeck;
     private int oldWorldDrawn;
+    private int ruinedCount;
     public OldWorldCard[] oldWorldTrack;
     private boolean[] oldWorldOngoing;
     private boolean[] oldWorldResolved;
@@ -43,8 +48,7 @@ public class GameState {
     private BranchType branchType;
     private String branchInfo;
 
-	// Action queue for sideband actions
-	private Queue<Action> actionQueue;
+    private double[] winProbabilities;
 
 	GameState lastRound;
 
@@ -60,21 +64,19 @@ public class GameState {
 
         oldWorldDeck = Rules.generateOldWorldDeck();
         oldWorldDrawn = 0;
+        ruinedCount = 0;
         oldWorldTrack = new OldWorldCard[2];
         oldWorldOngoing = new boolean[2];
         oldWorldResolved = new boolean[2];
 		
 		activePlayer = KHORNE;
         decidingPlayer = KHORNE;
-        nextStates = null;
-        branchInfo = null;
-		
-		gamePhase = OLDWORLD;
+        nextStates = new ArrayList<GameState>();
+        branchInfo = "";
+        branchType = NONE;
+        winProbabilities = new double[NUM_PLAYERS];
 
 		probability = 1.0;
-
-		// FIXME TODO drop this action queue?
-        actionQueue = new LinkedList<Action>();
 
 		lastRound = null;
     }
@@ -91,24 +93,27 @@ public class GameState {
 		}
 
 		this.oldWorldDeck = new ArrayList<OldWorldCard>(source.oldWorldDeck);
-        this.oldWorldDrawn = 0;
+        this.oldWorldDrawn = source.oldWorldDrawn;
+        this.ruinedCount = source.ruinedCount;
         this.oldWorldTrack = new OldWorldCard[2];
-        this.oldWorldTrack[0] = source.oldWorldTrack[0];
-        this.oldWorldTrack[1] = source.oldWorldTrack[1];
+        this.oldWorldOngoing = new boolean[2];
+        this.oldWorldResolved = new boolean[2];
+        for(int i = 0; i < 2; i++) {
+            this.oldWorldTrack[i] = source.oldWorldTrack[i];
+            this.oldWorldOngoing[i] = source.oldWorldOngoing[i];
+            this.oldWorldResolved[i] = source.oldWorldResolved[i];
+        }
 
 		this.activePlayer = source.activePlayer;
         this.decidingPlayer = source.decidingPlayer;
-        this.options = new ArrayList<Object>(options);
-		this.gamePhase = source.gamePhase;
-		this.endGamePhase = source.endGamePhase;
+        nextStates = new ArrayList<GameState>();
+        branchInfo = "";
+        branchType = NONE;
+        winProbabilities = new double[NUM_PLAYERS];
+
 		this.currentRegion = source.currentRegion;
 		this.probability = source.probability;
-		this.actionQueue = new LinkedList<Action>(source.actionQueue);
 		lastRound = source.lastRound;
-	}
-
-	public void queue(Action action) {
-		actionQueue.add(action);
 	}
 	
 	public boolean loadStateFromFile(String filename) {
@@ -131,17 +136,16 @@ public class GameState {
         regions[BORDERPRINCES].nobles = 1;
         regions[BADLANDS].peasants = 1;
 
-        gamePhase = OLDWORLD;
         for(OldWorldCard owc : oldWorldDeck) {
             if(owc.getName().equals("Bretonnian Knights")) {
                 oldWorldDeck.remove(owc);
                 oldWorldTrack[0] = owc;
             }
         }
+        oldWorldDrawn++;
         regions[BRETONNIA].heroes++;
         regions[BORDERPRINCES].heroes++;
 
-        gamePhase = DRAW;
         for(int i = 0; i < 5; i++) {
             players[KHORNE].drawCard();
             players[NURGLE].drawCard();
@@ -149,10 +153,57 @@ public class GameState {
             players[SLAANESH].drawCard();
         }
 
-        gamePhase = SUMMON;
         activePlayer = KHORNE;
+        lastRound = this;
+
+        // First round of moves
+        // K: BT to Empire
+        regions[EMPIRE].plastic.add(players[KHORNE].reserve.remove(10));
+        players[KHORNE].pp -= 3;
+
+        // N, T, S play cards:
+        // FIXME TODO
+        players[NURGLE].pp--;
+        players[TZEENTCH].pp--;
+        players[SLAANESH].pp--;
+
+        // K: Bloodsworn to TBP
+        regions[BORDERPRINCES].plastic.add(players[KHORNE].reserve.remove(0));
+        players[KHORNE].pp--;
+
+        // N: Leper to Estalia
+        regions[ESTALIA].plastic.add(players[NURGLE].reserve.remove(0));
+        players[NURGLE].pp--;
+
+        // T: Acolyte to Bret
+        regions[BRETONNIA].plastic.add(players[TZEENTCH].reserve.remove(0));
+        players[TZEENTCH].pp--;
+
+        // S: Seductress to Tilea
+        regions[TILEA].plastic.add(players[SLAANESH].reserve.remove(0));
+        players[SLAANESH].pp--;
 
         summonPhase();
+    }
+
+    private void newTurn() {
+        // Reset per-turn counters throughout the gameState
+        for(Region region : regions) {
+            region.newTurn();
+        }
+        for(Player player : players) {
+            player.newTurn();
+        }
+
+        activePlayer = KHORNE;
+        currentRegion = NORSCA;
+        for(int i = 0; i < 2; i++) {
+            oldWorldOngoing[i] = false;
+            oldWorldResolved[i] = false;
+        }
+
+        // And also set this as our startpoint for comparison reasons.
+        lastRound = this;
     }
 
     // Move the game state forward until it forks, due to some action or random event
@@ -168,7 +219,7 @@ public class GameState {
             nextStates.add(nextState);
             nextState.drawOldWorldCard(i);
         }
-        calculateProbabilities();
+        collapse();
     }
 
     public void drawOldWorldCard(int cardIndex) {
@@ -201,7 +252,7 @@ public class GameState {
                 owc.immediate(nextGameState, branch);
                 nextGameState.ongoingOldWorlds();
             }
-            makeDecision();
+            collapse();
         }
     }
 
@@ -219,6 +270,37 @@ public class GameState {
 
     public void drawPhase() {
         // FIXME TODO
+        /*
+            if (player.canDiscard()) {
+                actions.add(new Action(playerIndex, DISCARD_CARD));
+            }
+            if (player.canDraw()) {
+                actions.add(new Action(playerIndex, DRAW_CARD));
+            }
+
+            			case DISCARD_CARD:
+				for (int i = 0; i < players[player].hand.size(); i++) {
+					nextGameState = new GameState(this);
+					Player p = nextGameState.players[player];
+					ChaosCard cc = p.hand.get(i);
+					p.discardPile.add(p.hand.remove(i));
+					p.discardedThisTurn++;
+					successors.addAll(nextGameState.resolve());
+				}
+				break;
+
+			case DRAW_CARD:
+				for(int i = 0; i < players[player].deck.size(); i++) {
+					nextGameState = new GameState(this);
+					Player p = nextGameState.players[player];
+					p.hand.add(p.deck.remove(i));
+					p.drawnThisTurn++;
+					successors.addAll(nextGameState.resolve());
+				}
+				break;
+
+            break;
+         */
 
         activePlayer = KHORNE;
         summonPhase();
@@ -237,13 +319,17 @@ public class GameState {
             // Place plastic if adjacent
             if(playerAdjacentTo(activePlayer, dstRegionIndex)) {
 
-                // Place from reserve
+                // Place from reserve; shave this down to only try one of each type
+                EnumSet<Plastic.PlasticType> tried = EnumSet.noneOf(Plastic.PlasticType.class);
                 for(int i = 0; i < player.reserve.size(); i++) {
                     Plastic p = player.reserve.get(i);
-                    if(player.pp >= p.getCost(this, dstRegionIndex)) {
+                    if(!tried.contains(p.type) && player.pp >= p.getCost(this, dstRegionIndex)) {
+                        tried.add(p.type);
                         GameState nextGameState = new GameState(this);
                         nextStates.add(nextGameState);
-                        nextGameState.setBranchInfo(getPlayerName(activePlayer) + " SUMMON " + p.getName()
+                        nextGameState.setBranchInfo(getPlayerName(activePlayer)
+                                + "(" + player.pp + "pp) SUMMON " + p.getName()
+                                + "(" + p.getCost(this, dstRegionIndex) + "pp) "
                                 + " TO " + dstRegion.getName() + " FROM RESERVE");
                         nextGameState.executeMove(activePlayer, i, RESERVE, dstRegionIndex);
                     }
@@ -255,12 +341,14 @@ public class GameState {
                     if(srcRegionIndex != dstRegionIndex && srcRegion.canSummonOut()) {
                         for(int i = 0; i < srcRegion.plastic.size(); i++) {
                             Plastic p = srcRegion.plastic.get(i);
-                            if(player.pp >= p.getCost(this, dstRegionIndex)) {
+                            if(p.controlledBy == activePlayer && player.pp >= p.getCost(this, dstRegionIndex)) {
                                 GameState nextGameState = new GameState(this);
                                 nextStates.add(nextGameState);
-                                nextGameState.setBranchInfo(getPlayerName(activePlayer) + " SUMMON " + p.getName()
+                                nextGameState.setBranchInfo(getPlayerName(activePlayer)
+                                        + "(" + player.pp + "pp) SUMMON " + p.getName()
+                                        + "(" + p.getCost(this, dstRegionIndex) + "pp)"
                                         + " TO " + dstRegion.getName() + " FROM " + srcRegion.getName());
-                                nextGameState.executeMove(activePlayer, i, RESERVE, dstRegionIndex);
+                                nextGameState.executeMove(activePlayer, i, srcRegionIndex, dstRegionIndex);
                             }
                         }
                     }
@@ -268,16 +356,16 @@ public class GameState {
             }
 
             // Play a card to available slots
-            List<ChaosCard> hand = player.handKnown ? player.hand : player.deck;
+            List<ChaosCard> hand = player.hand;
             for(int cardIndex = 0; cardIndex < hand.size(); cardIndex++) {
                 ChaosCard card = hand.get(cardIndex);
                 for (int slot = 0; slot < dstRegion.getCardSlots(); slot++) {
-                    if (dstRegion.canPlayCard(activePlayer, slot) && player.getPP() >= card.getCost(player, dstRegion)) {
+                    if (dstRegion.canPlayCard(activePlayer, slot) && player.pp >= card.getCost(player, dstRegion)) {
                         GameState nextGameState = new GameState(this);
                         nextStates.add(nextGameState);
                         nextGameState.setBranchInfo(getPlayerName(activePlayer) + " PLAYS " + card.getName()
                                 + " TO " + dstRegion.getName() + " SLOT " + slot);
-                        nextGameState.playCard(activePlayer, cardIndex, dstRegionIndex, slot));
+                        nextGameState.playCard(activePlayer, cardIndex, dstRegionIndex, slot);
                     }
                 }
             }
@@ -290,7 +378,7 @@ public class GameState {
         nextGameState.players[activePlayer].pp = 0;
         nextGameState.advanceSummonPhase();
 
-        makeDecision();
+        collapse();
     }
 
     public void executeMove(int playerIndex, int plasticIndex, int srcRegionIndex, int dstRegionIndex) {
@@ -334,84 +422,22 @@ public class GameState {
         int initialPlayer = activePlayer;
         activePlayer = (activePlayer + 1) % NUM_PLAYERS;
 
-        while(players[activePlayer].pp == 0 && activePlayer != initialPlayer) {
+        while(players[activePlayer].pp <= 0 && activePlayer != initialPlayer) {
             activePlayer = (activePlayer + 1) % NUM_PLAYERS;
         }
 
-        if(activePlayer == initialPlayer && players[activePlayer].pp == 0) {
+        if(activePlayer == initialPlayer && players[activePlayer].pp <= 0) {
+            currentRegion = NORSCA;
             battlePhase();
         } else {
             summonPhase();
         }
     }
 
-    public ArrayList<Action> getLegalActions(int playerIndex) {
-	    ArrayList<Action> actions = new ArrayList<Action>();
-		Player player = players[playerIndex];
-
-		// It's a person's turn, which means they must:
-		// * Choose where to place an old world token
-
-		// What's the phase of the game?
-		switch (gamePhase) {
-			case OLDWORLD:
-				// Choose where to place an Old World Token
-				// FIXME TODO
-				break;
-
-			case DRAW:
-				if (player.canDiscard()) {
-					actions.add(new Action(playerIndex, DISCARD_CARD));
-				}
-				if (player.canDraw()) {
-					actions.add(new Action(playerIndex, DRAW_CARD));
-				}
-				break;
-
-			case SUMMON:
-				for(int dstRegionIndex = 0; dstRegionIndex < NUM_REGIONS; dstRegionIndex++) {
-					Region dstRegion = regions[dstRegionIndex];
-
-					// Place plastic if adjacent
-					if(playerAdjacentTo(playerIndex, dstRegionIndex)) {
-						// Place from reserve
-						for(int i = 0; i < player.reserve.size(); i++) {
-							Plastic p = player.reserve.get(i);
-							if(player.pp >= p.getCost(this, dstRegionIndex)) {
-								actions.add(new Action(playerIndex, MOVE_PLASTIC, i, RESERVE, dstRegionIndex));
-							}
-						}
-
-						// Or from another region
-						for(int srcRegionIndex = 0; srcRegionIndex < NUM_REGIONS; srcRegionIndex++) {
-							Region srcRegion = regions[srcRegionIndex];
-							if(srcRegionIndex != dstRegionIndex && srcRegion.canSummonOut()) {
-								for(int i = 0; i < srcRegion.plastic.size(); i++) {
-									Plastic p = srcRegion.plastic.get(i);
-									if(player.pp >= p.getCost(this, dstRegionIndex)) {
-										actions.add(new Action(playerIndex, MOVE_PLASTIC, i, srcRegionIndex, dstRegionIndex));
-									}
-								}
-							}
-						}
-					}
-
-					// Play a card to available slots
-					List<ChaosCard> hand = player.handKnown ? player.hand : player.deck;
-                    for(int cardIndex = 0; cardIndex < hand.size(); cardIndex++) {
-                        ChaosCard card = hand.get(cardIndex);
-						for (int slot = 0; slot < dstRegion.getCardSlots(); slot++) {
-							if (dstRegion.canPlayCard(playerIndex, slot) && player.getPP() >= card.getCost(player, dstRegion)) {
-								actions.add(new Action(playerIndex, PLACE_CARD, cardIndex, dstRegionIndex, slot));
-							}
-						}
-					}
-				}
-				// Can also simply pass.
-				actions.add(new Action(playerIndex, PASS));
-				break;
-
-			case BATTLE:
+    public void battlePhase() {
+        // FIXME TODO D: this will be interesting
+        /*
+            case BATTLE:
 				// Choose hit allocation
 				boolean hit_allocatable = false;
 				Region region = regions[currentRegion];
@@ -429,97 +455,130 @@ public class GameState {
 				if(!hit_allocatable) {
 					actions.add(new Action(playerIndex, PASS));
 				}
+         */
 
-				break;
+        corruptionPhase();
+    }
 
-			case CORRUPTION:
-				// No choices here...
-				break;
+    public void corruptionPhase() {
+        // FIXME TODO check for corruption modifiers, place corruption
 
-			case END:
-				switch (endGamePhase) {
-					case HERO:
-						// FIXME TODO
+        endPhase();
+    }
 
-						break;
-					case OLDWORLD:
-						// FIXME TODO
-						break;
+    public void endPhase() {
+        // Remove Chaos Cards
+        for (int r = 0; r < NUM_REGIONS; r++) {
+            Region region = regions[r];
+            for (int c = 0; c < region.cards.size(); c++) {
+                ChaosCard card = region.cards.get(c);
+                if (!card.leaveNextTurn(this, r)) {
+                    region.cards.set(c, null);
+                    players[card.belongsTo()].discardPile.add(card);
+                }
+            }
+        }
 
-					case DIALS:
-						switch(player.getDialTick().getDialType()) {
-							case UPGRADE:
-								for(Upgrade upgrade: player.upgrades_possible) {
-									actions.add(new Action(playerIndex, PICK_UPGRADE, upgrade));
-								}
-								break;
-							case TOKEN:
+        resolveHeroes();
+    }
 
-								// FIXME TODO
+    public void resolveHeroes() {
+        // Resolve Hero tokens
+        // FIXME TODO
 
-								break;
-							default:
-								System.out.println("Hit default END.DIALS case, something went wrong.");
-						}
-						break;
+        scoreRuinedRegions();
+    }
 
-					default:
-						System.out.println("Fell through endGamePhase switch statement...");
-				}
-				break;
-		}
+    public void scoreRuinedRegions() {
+        // Score Ruined Regions
+        for(int rIndex = 0; rIndex < NUM_REGIONS; rIndex++) {
+            Region region = regions[rIndex];
+            Region regionl = lastRound.regions[rIndex];
 
-		return actions;
-	}
+            List<Player> firsts = null, seconds = null;
+            int corruption_first = 0, corruption_second = 0;
 
-	// generateSuccessors
-	// apply an action, then generate all possible successor gamestates
-	// 	until the next player action;
-	public List<GameState> generateSuccessors(int player, Action action) {
-	    List<GameState> successors = new ArrayList<GameState>();
+            if(region.ruined && !regionl.ruined) {
+                // It ruined this round. Score it.
 
-		GameState nextGameState;
+                for(int pIndex = 0; pIndex < NUM_PLAYERS; pIndex++) {
+                    int corruption = region.corruption[pIndex];
+                    if (corruption > regionl.corruption[pIndex]) {
+                        players[pIndex].vp += Rules.RuinerBonus(ruinedCount);
+                    }
 
-		switch(action.getActionType()) {
-			case MOVE_PLASTIC:
-				// FIXME TODO
-				break;
-			case MOVE_TOKEN:
-				// FIXME TODO
-				break;
-			case KILL_PLASTIC:
+                    // Rank by corruption
+                    if (corruption > corruption_first) {
+                        corruption_second = corruption_first;
+                        seconds = firsts;
+                        firsts = new ArrayList<Player>();
+                        firsts.add(players[pIndex]);
+                        corruption_first = corruption;
+                    } else if (corruption == corruption_first) {
+                        firsts.add(players[pIndex]);
+                    } else if (corruption > corruption_second) {
+                        seconds = new ArrayList<Player>();
+                        seconds.add(players[pIndex]);
+                        corruption_second = corruption;
+                    } else if (corruption == corruption_second) {
+                        seconds.add(players[pIndex]);
+                    }
+                }
 
-				break;
-			case DISCARD_PLASTIC:
-				break;
-			case DISCARD_TOKEN:
-				break;
-			case PLACE_CARD:
+                // Score by corruption
+                if(firsts.size() == 1) {
+                    // 1st takes 1st
+                    firsts.get(0).vp += Rules.RuinerFirst(ruinedCount, rIndex);
 
-				break;
+                    if(seconds.size() == 1) {
+                        // 2nd takes 2nd
+                        seconds.get(0).vp += Rules.RuinerSecond(ruinedCount, rIndex);
+                    } else {
+                        // 2nds split 2nd
+                        int bonus = Rules.RuinerSecond(ruinedCount, rIndex) / seconds.size();
+                        for(Player player : seconds) {
+                            player.vp += bonus;
+                        }
+                    }
+                } else {
+                    // Everyone in first splits; 2nds get nothing
+                    int bonus = (Rules.RuinerFirst(ruinedCount, rIndex) +
+                                Rules.RuinerSecond(ruinedCount, rIndex)) / firsts.size();
 
-			case DISCARD_CARD:
-				for (int i = 0; i < players[player].hand.size(); i++) {
-					nextGameState = new GameState(this);
-					Player p = nextGameState.players[player];
-					ChaosCard cc = p.hand.get(i);
-					p.discardPile.add(p.hand.remove(i));
-					p.discardedThisTurn++;
-					successors.addAll(nextGameState.resolve());
-				}
-				break;
+                    for(Player player : firsts) {
+                        player.vp += bonus;
+                    }
+                }
+                ruinedCount++;
+            }
+        }
 
-			case DRAW_CARD:
-				for(int i = 0; i < players[player].deck.size(); i++) {
-					nextGameState = new GameState(this);
-					Player p = nextGameState.players[player];
-					p.hand.add(p.deck.remove(i));
-					p.drawnThisTurn++;
-					successors.addAll(nextGameState.resolve());
-				}
-				break;
+        advanceThreatDials();
+    }
 
-			case PICK_UPGRADE:
+    public void advanceThreatDials() {
+        // Advance Threat Dials
+        // FIXME TODO
+
+        /*
+        case DIALS:
+        switch(player.getDialTick().getDialType()) {
+            case UPGRADE:
+                for(Upgrade upgrade: player.upgrades_possible) {
+                    actions.add(new Action(playerIndex, PICK_UPGRADE, upgrade));
+                }
+                break;
+            case TOKEN:
+
+                // FIXME TODO
+
+                break;
+            default:
+                System.out.println("Hit default END.DIALS case, something went wrong.");
+        }
+        break;
+
+        case PICK_UPGRADE:
 				for(int i = 0; i < players[player].upgrades_possible.size(); i++) {
 					nextGameState = new GameState(this);
 					Player p = nextGameState.players[player];
@@ -528,125 +587,94 @@ public class GameState {
 					successors.addAll(nextGameState.resolve());
 				}
 				break;
+        */
 
-			case PASS:
-				nextGameState = new GameState(this);
-				nextGameState.players[player].vp = 0;
-				successors.addAll(nextGameState.resolve());
-				break;
-		}
+        checkForGameEnd();
+    }
 
-        return successors;
-	}
+    public void checkForGameEnd() {
+        // Check for Game End
 
-	// Now that the action is complete, move the game forward.
-	public List<GameState> resolve() {
-	    List<GameState> list = new ArrayList<GameState>();
+        Player winner = null;
 
-		// discard any must discards immediately
-
-        switch(gamePhase) {
-            case OLDWORLD:
-                // Draw a card
-                for(int i = 0; i < oldWorldDeck.size(); i++) {
-                    GameState nextState = new GameState(this);
-                    nextState.setProbability(1.0/oldWorldDeck.size());
-                    list.addAll(nextState.drawOldWorldCard(i));
+        // Ticks win first
+        for(int p = 0; p < NUM_PLAYERS; p++) {
+            Player player = players[p];
+            if(player.dialWin()) {
+                if(winner == null || player.vp > winner.vp) {
+                    winner = player;
                 }
-                // FIXME TODO
-                break;
-            case DRAW:
-                // FIXME TODO
-                break;
-            case SUMMON:
-                // FIXME TODO
-                break;
-
-            case BATTLE:
-                // FIXME TODO
-                break;
-            case DOMINATE:
-                // FIXME TODO
-                break;
-            case CORRUPTION:
-                // FIXME TODO
-                break;
-            case END:
-                switch(endGamePhase) {
-                    case HERO:
-                        // FIXME TODO
-                        break;
-                    case OLDWORLD:
-                        // FIXME TODO
-                        break;
-                    case DIALS:
-                        // FIXME TODO
-                        break;
-                }
-                break;
+            }
         }
-        return list;
-	}
-	
-	public Action getBestMove(int player, boolean print) {
 
-		// From all successor moves...
-		ArrayList<Action> actions = getLegalActions(player);
-		
-		Action bestAction = null;
-		double bestProb = 0;
+        // Otherwise, check for VP victory
+        if(winner == null) {
+            for(int p = 0; p < NUM_PLAYERS; p++) {
+                Player player = players[p];
+                if(player.vp >= 50 && (winner == null || player.vp > winner.vp
+                        || (player.vp == winner.vp && player.getThreat() > winner.getThreat()))) {
+                    winner = player;
+                }
+            }
+        }
 
-		// For each action...
-		for (Action a: actions) {
-			// Generate all successor states.
-			List<GameState> nextStates = generateSuccessors(player, a);
-			double totalProb = 0;
+        if(winner != null) {
+            // set winner probs, end of tree
+            for(int p = 0; p < NUM_PLAYERS; p++) {
+                winProbabilities[p] = (p == winner.index) ? 1.0 : 0.0;
+            }
+        } else if(oldWorldDrawn >= 1 || ruinedCount >= 6) {
+            // Board victory if run out of old world or ruins
+            //System.out.println("Board victory!");
+            for(int p = 0; p < NUM_PLAYERS; p++) {
+                winProbabilities[p] = 0.0;
+            }
+        } else {
+            // The game continues.
+            oldWorldPhase();
+        }
+    }
 
-			for(GameState nextState: nextStates) {
-				// Calc probability of successor state, add it to this action's prob
-				totalProb += nextState.getProbability() * nextState.winProbability(player);
-			}
-
-			// Store calc'd data, flag this one if it's the best
-			// a.setWinProbability(totalProb);
-			if(totalProb > bestProb) {
-				bestProb = totalProb;
-				bestAction = a;
-			}
-		}
-
-		/*
-		if(print) {
-			// Print actions in order of win probability.
-			actions.sort(Comparator.comparing(Action::getWinProbability));
-			Collections.reverse(actions);
-			for (Action a: actions) {
-				System.out.println(a.info());
-			}
-		}
-		*/
-
-		// Return the best one.
-		return bestAction;
-	}
-
-	public double winProbability(int playerID) {
-		if (gameOver() && winner() == playerID) {
-			return 1;
-		} else if(gameOver() && winner() != playerID) {
-			return 0;
-		} else {
-			// find likely next player's state
-			Action a = getBestMove(activePlayer, false);
-			List<GameState> nextGameStates = generateSuccessors(activePlayer, a);
-			
-			double probability = 0;
-			for( GameState nextGameState: nextGameStates ) {
-				probability += nextGameState.getProbability() * nextGameState.winProbability(playerID);
-			}
-			return probability;
-		}
-	}
+    //========================================================
+    // Tree traversal functions
+    public void collapse() {
+        if(branchType == PROBABILITY) {
+            // Condense them all down to a single win/loss probability
+            GameState maxState = null; double maxProb = 0; // used to track most likely scenario for review
+            for(GameState nextState : nextStates) {
+                double thisProb = nextState.getProbability();
+                for(int pIndex = 0; pIndex < NUM_PLAYERS; pIndex++) {
+                    winProbabilities[pIndex] += thisProb * nextState.winProbabilities[pIndex];
+                }
+                if(maxState == null || thisProb > maxProb) {
+                    maxProb = thisProb;
+                    maxState = nextState;
+                }
+            }
+            branchInfo = branchInfo + "\n" + "Expected P(" + maxProb + "): " + maxState.getBranchInfo();
+        } else if(branchType == DECISION) {
+            // Choose based on our decision policy
+            if(DECISION_POLICY == MAX) {
+                // Choose the best outcome for decidingPlayer;
+                GameState best = null;
+                for(GameState trial : nextStates) {
+                    if(best == null) {
+                        best = trial;
+                    } else if(trial.winProbabilities[decidingPlayer] > best.winProbabilities[decidingPlayer]) {
+                        best = trial;
+                    }
+                }
+                winProbabilities = best.winProbabilities;
+                branchInfo = branchInfo + "\n" + best.getBranchInfo();
+            } else {
+                // FIXME TODO MINMAX
+            }
+        } else {
+            dbgPrint("Error: collapsing a non-branch");
+        }
+        // Can prune branches below afterwards.
+        nextStates = null;
+    }
 	
 	public boolean gameOver() {
 		// FIXME TODO
@@ -662,8 +690,27 @@ public class GameState {
 	// Helper functions
 
     public boolean playerAdjacentTo(int playerIndex, int regionIndex) {
-        // FIXME TODO
-        return true;
+        Player player = players[playerIndex];
+        if(player.reserve.size() == player.maxReserve) {
+            return true; // no plastic on the board
+        }
+
+        // check this region
+        for(Plastic p : regions[regionIndex].plastic) {
+            if(p.controlledBy == playerIndex) {
+                return true;
+            }
+        }
+
+        // check adjacent regions
+        for(int r : regions[regionIndex].getAdjacencies()) {
+            for(Plastic p : regions[r].plastic) {
+                if(p.controlledBy == playerIndex) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public List<GameState> listify() {
@@ -715,6 +762,5 @@ public class GameState {
 	public String getBranchInfo() { return branchInfo; }
 	public void setBranchInfo(String str) {
 	    branchInfo = str;
-        System.out.println("Exploring branch: " + branchInfo);
 	}
 }

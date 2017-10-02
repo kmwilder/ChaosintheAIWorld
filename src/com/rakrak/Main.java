@@ -11,15 +11,7 @@ public class Main {
         //gameState.loadStateFromFile("TODO.txt");
         gameState.loadDummyState();
 
-        int whoseTurn = gameState.whoseTurn();
-        Action action = gameState.getBestMove(whoseTurn, true);
-
-        if (action != null) {
-            System.out.println(action.info());
-        } else {
-            System.out.println("No action found...");
-        }
-
-        System.out.println("Sim completed.");
+        System.out.println("\n\nSim completed. Surviving path as follows:");
+        System.out.println(gameState.getBranchInfo());
     }
 }

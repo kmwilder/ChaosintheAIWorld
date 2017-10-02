@@ -28,6 +28,7 @@ public class Player {
 	public int handSize;
 	public List<ChaosCard> discardPile;
 	public List<Plastic> reserve;
+    public int maxReserve;
 	public int dacs;
 
 	// Draw phase
@@ -56,6 +57,7 @@ public class Player {
         peasants = 0;
 
 		reserve = Rules.generateReserve(index);
+        maxReserve = reserve.size();
 		
 		dial = Rules.generateDial(index);
 		dial_position = 0;
@@ -71,16 +73,48 @@ public class Player {
 	}
 
 	Player(Player source) {
-        // FIXME TODO
+	    this.index = source.index;
+	    this.name = source.name;
+        this.maxDraws = source.maxDraws;
+        this.handKnown = source.handKnown;
+        this.handSize = source.handSize;
+        this.deck = new ArrayList<ChaosCard>(source.deck);
+        this.hand = new ArrayList<ChaosCard>(source.hand);
+        this.drawnThisTurn = source.drawnThisTurn;
+        this.discardedThisTurn = source.discardedThisTurn;
+        this.pp = source.pp;
+        this.vp = source.vp;
+        this.peasants = source.peasants;
+        this.reserve = new ArrayList<Plastic>(source.reserve);
+        this.maxReserve = source.maxReserve;
+        this.dial = source.dial;
+        this.dial_position = source.dial_position;
+        this.dacs = source.dacs;
+
+        this.upgrades_possible = new ArrayList<Upgrade>(source.upgrades_possible);
+        this.upgrades_taken = new ArrayList<Upgrade>(source.upgrades_taken);
+
+        num_hits = new int[NUM_REGIONS];
+        num_kills = new int[NUM_REGIONS];
+        for(int i = 0; i < NUM_REGIONS; i++) {
+            num_hits[i] = source.num_hits[i];
+            num_kills[i] = source.num_kills[i];
+        }
     }
-	
-	public int getVP() {
-		return vp;
-	}
+
+    public void newTurn() {
+        drawnThisTurn = 0;
+        discardedThisTurn = 0;
+        pp = Rules.startingPP(index);
+        // FIXME TODO upgrades here
+        dacs = 0;
+        num_hits = new int[NUM_REGIONS];
+        num_kills = new int[NUM_REGIONS];
+    }
+
 	public boolean dialWin() {
 		return (dial_position == dial.size() - 1);
 	}
-	public int getPP() { return pp; }
 
 	// Logic used to determine possible actions
 	public boolean canDraw() {
@@ -119,9 +153,4 @@ public class Player {
     public void discard() {
         // FIXME TODO
     }
-
-	public void newTurn() {
-	    // FIXME TODO reset temp states;
-    }
-
 }

@@ -119,8 +119,9 @@ class MeddlingOfSkaven extends ChaosCard {
 		cost = 1; magic = false; name = "The Meddling of Skaven"; needstarget = true; owner = TZEENTCH;
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.queue(new Action(target, DISCARD_CARD));
-		gameState.queue(new Action(target, DISCARD_CARD));
+	    // FIXME TODO replaced this
+		//gameState.queue(new Action(target, DISCARD_CARD));
+		//gameState.queue(new Action(target, DISCARD_CARD));
 	}
 	public List<Integer> validTargets(GameState gameState, int region) {
 		List<Integer> list = new ArrayList<Integer>();
@@ -143,7 +144,8 @@ class Teleport extends ChaosCard {
 	}
 	public void resolve(GameState gameState, int region) {
 		if( !gameState.regions[region].hasEffect(FIELD_OF_CARNAGE) || gameState.regions[region].plastic.get(target).belongsTo == KHORNE)  {
-			gameState.queue(new Action(BOARD, MOVE_PLASTIC, target, region, destination));
+		    // fIXME TODO
+			//gameState.queue(new Action(BOARD, MOVE_PLASTIC, target, region, destination));
 		}
 	}
 	public List<Integer> validTargets(GameState gameState, int region) {
@@ -447,6 +449,7 @@ class TheBloodGodsCall extends ChaosCard {
 		cost = 2; magic = false; name = "The Blood God's Call"; owner = KHORNE;
 	}
 	public void resolve(GameState gameState, int region) {
-		gameState.queue(new Action(KHORNE, BGC, region));
+	    // FIXME TODO
+		//gameState.queue(new Action(KHORNE, BGC, region));
 	}
 }

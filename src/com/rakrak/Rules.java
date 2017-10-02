@@ -2,6 +2,7 @@ package com.rakrak;
 
 import java.util.*;
 
+import static com.rakrak.GameState.Defines.EARLY_END;
 import static com.rakrak.Rules.Defines.*;
 import static com.rakrak.Tick.DialType.*;
 import static com.rakrak.Tick.TokenAction.*;
@@ -139,6 +140,7 @@ public final class Rules {
     }
 
     public static int startingPP(int index) {
+        if(EARLY_END) { return 5; }
         if(index == KHORNE) {
             return 7;
         } else {
@@ -301,6 +303,43 @@ public final class Rules {
         deck.add(new RoadWardens());
 
         return deck;
+    }
+
+    // FIXME needs testing
+    public static int RuinerBonus(int ruinNo) {
+        int[] ruinerBonus = {3, 4, 4, 5, 5};
+        return ruinerBonus[ruinNo];
+    }
+
+    // FIXME needs testing
+    public static int RuinerFirst(int ruinNo, int region) {
+        int[][] ruinerFirst = {
+                {6, 7, 7, 8, 8}, // NORSCA
+                {6, 7, 7, 8, 8}, // TROLLCOUNTRY
+                {8, 9, 9, 10, 10}, // KISLEV
+                {10, 11, 11, 12, 12}, // EMPIRE
+                {8, 9, 9, 10, 10}, // BRET
+                {9, 10, 10, 11, 11}, // ESTALIA
+                {7, 8, 8, 9, 9}, // TILEA
+                {7, 8, 8, 9, 9}, // TBP
+                {6, 7, 7, 8, 8} // BADLANDS
+        };
+        return ruinerFirst[region][ruinNo];
+    }
+    // FIXME needs testing
+    public static int RuinerSecond(int ruinNo, int region) {
+        int[][] ruinerSecond = {
+                {3, 3, 3, 4, 4}, // NORSCA
+                {3, 3, 3, 4, 4}, // TC
+                {4, 4, 4, 5, 5}, // KISLEV
+                {5, 5, 5, 6, 6}, // EMPIRE
+                {4, 4, 4, 5, 5}, // BRETONNIA
+                {4, 5, 5, 5, 5}, // ESTALIA
+                {3, 4, 4, 4, 4}, // TILEA
+                {3, 4, 4, 4, 4}, // TBP
+                {3, 3, 3, 4, 4}  // BADLANDS
+        };
+        return ruinerSecond[region][ruinNo];
     }
 
 }

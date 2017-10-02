@@ -246,7 +246,7 @@ class DwarfTrollslayers extends OldWorldCard {
 // FIXME TODO none of these are implemented from here on out
 class TheHornedOnesDue extends OldWorldCard {
     TheHornedOnesDue() {
-        name = "The Horned One's Due"; discard = false; num = 1; targets = 1;
+        name = "The Horned One's Due"; discard = false; num = 1; // targets = 1;
     }
 }
 

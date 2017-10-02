@@ -19,6 +19,7 @@ public abstract class Plastic {
     protected int dice;
     protected int defense;
     protected boolean warpShielded;
+    protected boolean special;
 
     Plastic() { }
 
@@ -26,6 +27,7 @@ public abstract class Plastic {
     public PlasticType getType() { return type; }
     public boolean isWarpShielded() { return warpShielded; }
     public void setWarpShielded(boolean ws) { warpShielded = ws; }
+    public void newTurn() { warpShielded = false; controlledBy = belongsTo; special = false; }
 
     public int getCost(GameState gameState, int region) {
         return cost;
@@ -36,11 +38,6 @@ public abstract class Plastic {
 
     public int getAttacks(GameState gameState, int region) { return dice; }
     public int getAttacks(Region region) { return dice; } // fixme should only be this or the above
-
-    public void newTurn() {
-        controlledBy = belongsTo;
-        warpShielded = false;
-    }
 }
 
 class Bloodsworn extends Plastic {
